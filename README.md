@@ -27,13 +27,6 @@ The goal was to understand differences in pro-social attitudes across countries,
 
 ---
 
-## Deliverables
-- **R Markdown script:** `scripts/Ass1.Rmd`  
-- **Report PDF:** `report/FathimaSaaraMohamedRamsy_32757751_report.pdf`  
-- **Assignment specification PDF:** `docs/FIT3152 Assignment 01 2024.pdf`  
-
----
-
 ## Technology Stack
 - **Language:** R  
 - **Packages:** dplyr, ggplot2, cluster, factoextra, caret  
