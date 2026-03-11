@@ -1,0 +1,2047 @@
+---
+title: "FIT3152_Assignment 01"
+output:
+  pdf_document: default
+  html_document: default
+date: '2024-04-08'
+---
+
+                            #FIT3152 Assignment 01
+                            #Student id: 32757751
+                            #Name: Fathima Saara Mohamed Ramsy
+                            #Focus Country: Hungary
+
+
+**Setting up the working environment**
+
+Before diving into the analysis of the dataset, it's important to prepare the working environment in R, which involves loading a suite of packages designed to aid in data manipulation, reading, visualization and data handling.
+
+```{r}
+#Load the required packages
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(lubridate)
+
+```
+
+```{r}
+setwd("/Users/saararamzy/Desktop/FIT3152/Ass1")
+cvbase = read.csv("PsyCoronaBaselineExtract.csv")
+dim(cvbase)
+```
+
+The first step in our data analysis process is to set up a clean and controlled environment in R.This block of R code is preparing the environment for data analysis.
+```{r}
+setwd("/Users/saararamzy/Desktop/FIT3152/Ass1")
+rm(list = ls())
+set.seed(32757751) # XXXXXXXX = your student ID
+cvbase = read.csv("PsyCoronaBaselineExtract.csv")
+cvbase <- cvbase[sample(nrow(cvbase), 40000), ] # 40000 rows
+dim(cvbase)
+
+```
+
+
+*1. Descriptive analysis and pre-processing.*
+
+Before we can delve into the data analysis, it's imperative to perform preliminary data cleaning. Thus, we'll tackle questions 1(a) and 1(b) concurrently, as establishing a clean dataset is a prerequisite for an accurate and effective exploration of the data.
+
+Below is a quick overview of the dataset, allowing us to understand its size, structure, and the nature of the data contained within it. These initial steps are crucial for identifying potential issues that may require preprocessing.
+
+
+```{r}
+# Get the dimensions of the dataset
+# This tells us how many rows (observations) and columns (variables) are in the dataset
+dim(cvbase)
+```
+
+**Dimension**
+The initial dim(cvbase) call shows 57942 rows, but after sampling, it's been reduced to 40000 rows, which is the expected result of the sampling operation. The number of columns remains consistent at 52.Upon initial inspection of our dataset's structure, we observe that it is comprised of 52 columns, each corresponding to a variable outlined in our codebook. These variables cover a range of information pertaining to the survey responses, including demographic data, behaviors, and attitudes related to the COVID-19 pandemic.
+
+After the application of a random sampling method, our dataset now contains 40,000 unique observations. This sizeable subset will allow for robust statistical analysis while remaining computationally manageable.
+
+The dataset has been loaded successfully into R, verified by the dimensions output, and is now resident in memory, ready for the next steps in our data analysis process.
+
+
+
+```{r}
+# View the structure of the dataset
+# This function shows the data type of each column and a preview of the first few entries in each
+str(cvbase)
+
+```
+**Data Types**
+A thorough examination of the data types within our dataset reveals that, predominantly, the columns are structured as integer types. This is expected, as the survey design likely coded responses to questions numerically for streamlined analysis. Exceptions to this pattern include variables such as rankOrdLife_1 to rankOrdLife_6, which are of type character, representing ranked choices in life values. The coded_country variable is another character type, containing textual representations of countries, like "Hungary".Such textual data is typical for open-ended survey responses or pre-defined text options. This structure is consistent with the codebook's indications, confirming that the dataset is indeed derived from a survey where most responses are quantifiable, but some allow for textual input to capture diverse participant information.
+
+The presence of 'NA' values across various variables suggests missing data that will need to be addressed in the preprocessing stage. Some variables, like gender, age, and edu, are coded numerically, possibly indicating ordered categories. Additionally, coded_country is a character variable representing the country names.
+
+```{r}
+# Get a summary of the dataset
+# For numerical variables, this includes statistics like mean, median, min, and max
+# For categorical variables, this will show a count of the different levels or categories
+summary(cvbase)
+```
+The dataset consists of 40,000 observations and 52 variables, each reflecting a different aspect of the respondents' employment status, social contact frequency, loneliness levels, happiness, life satisfaction, and attitudes towards COVID-19 preventative behaviors, among other aspects.
+
+Employment status variables (employstatus_1 to employstatus_10) are primarily populated with 'NA' values, which indicates a single-selection response for most participants, aligning with the exclusive nature of employment status options. For example, an individual cannot be both employed full-time and a student, explaining the predominance of 'NA' values across these variables.
+
+Social contact frequency variables (isoFriends_inPerson, isoOthPpl_inPerson, isoFriends_online, isoOthPpl_online) have integer values ranging from 0 to 7, representing the days of the week, with 'NA's suggesting non-response or non-applicability in certain cases.
+
+Subjective feelings and attitudes towards life and current events are recorded as integer scores, with scales likely varying according to the specific question, and demonstrate a mix of responses. For instance, lone01, lone02, and lone03 capture feelings of loneliness, while happy and lifeSat reflect happiness and life satisfaction levels. MLQ, bor01, bor02, bor03, consp01, consp02, and consp03 appear to deal with more existential and conspiracy-theory-related queries.
+
+rankOrdLife_ variables are of character type, indicating ranked life values such as beauty, achievement, and so on, signifying the subjective importance of various life aspects to respondents.
+
+COVID-19 related behaviors (c19perBeh01 to c19perBeh03) and attitudes (c19RCA01 to c19RCA03) are numerically coded to capture the intensity of respondents' preventative actions and support for various measures. A significant number of 'NA's in these variables suggests selective applicability or non-response.
+
+The coronaClose_ series of variables also have a significant number of 'NA's, potentially representing the participants' close circle affected by COVID-19, with binary responses indicated by the presence of only '1's and 'NA's.
+
+Demographic variables like gender, age, and edu (education) show a range of values indicative of diverse survey participants, with a minor proportion of 'NA' values suggesting a high response rate for these questions.
+
+Lastly, the variable coded_country is a character vector representing the country names of respondents, providing a textual geographical context to the dataset.
+
+The presence of missing data (NA's) across various variables will need to be addressed prior to analysis. The summary information will be pivotal for determining the approach to missing data, be it imputation or exclusion, as well as for any necessary data transformations to facilitate analysis.
+
+In summary, this dataset provides a broad spectrum of information conducive to an in-depth analysis of the factors affecting pro-social behavior during the COVID-19 pandemic. Preprocessing steps including handling missing values, decoding categorical variables, and ensuring that the data types are suitable for analysis will be crucial for the integrity and reliability of the subsequent analysis.
+
+
+The first variable, isoFriends_inPerson, represents the frequency of in-person contact with friends or relatives who do not live in the same household. The responses range from 0 (no contact) to 7 (daily contact).
+```{r}
+## Summary of categorical data
+table(cvbase$isoFriends_inPerson)
+```
+This distribution suggests a significant number of individuals reported no in-person contact with friends, potentially reflecting social distancing practices during the early stages of the pandemic.
+
+
+
+The second variable, isoOthPpl_inPerson, looks at in-person contact with people in general, which may include a broader network beyond friends and relatives.
+```{r}
+## Summary of categorical data
+table(cvbase$isoOthPpl_inPerson)
+```
+Again, a notable portion of the survey participants indicated they had no in-person contact with others, pointing to widespread compliance with isolation measures.
+
+
+
+
+```{r}
+# Summary of categorical data
+table(cvbase$rankOrdLife_1)
+```
+
+
+```{r}
+# Summary of categorical data
+table(cvbase$rankOrdLife_1)
+```
+
+
+```{r}
+# Summary of categorical data
+table(cvbase$rankOrdLife_2)
+```
+
+
+```{r}
+# Summary of categorical data
+table(cvbase$rankOrdLife_3)
+
+```
+
+
+```{r}
+# Summary of categorical data
+table(cvbase$rankOrdLife_4)
+```
+
+In the dataset, the `rankOrdLife` variables represent participants' rankings of what's important in their lives, with each variable (`rankOrdLife_1` to `rankOrdLife_6`) corresponding to a different aspect such as Beauty (A), Achievement (B), and so on, up to Empathy (F).
+
+The frequency tables of these variables, as shown in the outputs, indicate how participants prioritized these values. For instance, the high frequency of 'F' in `rankOrdLife_1` suggests that many participants ranked 'Empathy' as the most important value in their lives. Conversely, the letter 'A' for 'Beauty' appears less frequently, indicating it was ranked as the most important less often.
+
+As we move from `rankOrdLife_1` to `rankOrdLife_4`, the distribution of rankings changes. This could reflect a shift in participants' prioritization as the rank order progresses from most to least important. The consistent presence of 'F' across all rank positions might indicate a general consensus on the significance of 'Empathy', while the distribution of other values like 'Beauty' and 'Achievement' varies more noticeably.
+
+
+
+
+```{r}
+# Overall missing value count
+sum(is.na(cvbase))
+```
+The result, [1] 573843, indicates that there are 573,843 missing values within the entire dataset. This suggests that a significant amount of data is missing, which could have implications for any analysis performed on this dataset. It would be important to investigate the patterns of these missing values to determine if they are random or if there is some structure to the missingness that could bias the results of the analysis.
+
+```{r}
+# Column-wise missing value count
+sapply(cvbase, function(x) sum(is.na(x)))
+```
+From the output, we see a variety of counts for missing values across different variables. For example, the employment status variables (employstatus_1 through employstatus_10) have a high number of missing values, ranging from 29,178 to 39,261. This could be due to the nature of the survey questions where respondents could select only one applicable employment status, leaving the rest as NA.Furthermore, the Employment Status section permitted multiple selections, and any unselected options were automatically recorded as NA. This mechanism for capturing data could explain why only binary outcomes of 1 or NA are present in these columns.
+
+The social isolation variables (isoFriends_inPerson, isoOthPpl_inPerson, isoFriends_online, isoOthPpl_online) have relatively few missing values, suggesting that most respondents provided information about their social contact.
+
+Subjective well-being indicators such as loneliness (lone01, lone02, lone03) and happiness (happy) also have a low count of missing values, indicating good response rates for these questions.
+
+The rankOrdLife variables, which seem to be rankings of life values, have consistent missing values around 1,699 to 1,700, which may indicate a pattern in the data where respondents did not rank all life values.
+
+Interestingly, the coded_country variable has no missing values, showing that the country of residence was recorded for all respondents.
+
+Variables related to the COVID-19 pandemic, such as c19perBeh01 to c19ProSo04, have low missing values, which is crucial for the analysis of pro-social behaviors.
+
+In light of these observations, it's crucial to distinguish between data that is missing because it's not applicable and data missing due to nonresponse or other reasons. Understanding this distinction is vital for accurate data cleaning and subsequent analyses. When cleaning the dataset, it may be appropriate to convert these NAs to 0s for certain variables, to maintain semantic consistency and correctly reflect the intent of survey responses.The high number of missing values in some columns indicates the need for careful data preprocessing before analysis. Decisions will need to be made on how to handle these missing values, whether to impute them, exclude incomplete cases, or use models that can handle missing data. It's also important to investigate if the missingness is random or if it has any systematic pattern that could bias the study's conclusions.
+
+Overall,looking at the given numbers, the variables related to employment status (employstatus_1 to employstatus_10) have particularly high counts of missing values, ranging from 29,178 to 39,261 each.
+
+In addition, the variables coronaClose_1 to coronaClose_5 also have a large number of NA values, with counts from 35,059 to 39,462. The coronaClose_6 has a significantly lower count of NA values at 10,699, but this is still considerable.
+
+It is important to note that in the context of this survey data, these NA values do not necessarily represent a lack of data quality. Instead, they could be indicative of the survey's design where certain questions are not applicable to all respondents. For instance, employment status questions would not be relevant to someone who is a student, retired, or unable to work, hence the response would be recorded as NA.
+
+
+```{r}
+# Simple option: remove rows with missing values
+cvbase <- na.omit(cvbase)
+dim(cvbase)
+```
+The subsequent dim(cvbase) command reveals that the data frame now has 0 rows and 52 columns, indicating that every single row in the original data frame contained at least one missing value. As a result, the na.omit() function has removed all rows, leaving the dataset empty.
+
+This highlights a significant challenge with the dataset: the pervasiveness of missing values. It suggests that a simple listwise deletion (i.e., removing any row with a missing value) is not a viable approach to handling missing data for this particular dataset, as it would result in the loss of all data.
+
+Instead, alternative methods for handling missing data may need to be considered, such as imputation techniques or models that can handle missingness, depending on the nature and mechanism of the missing data. It also underscores the importance of understanding the context and reasons behind the missing values before deciding on the appropriate method for dealing with them.
+
+```{r}
+setwd("/Users/saararamzy/Desktop/FIT3152/Ass1")
+rm(list = ls())
+set.seed(32757751) # XXXXXXXX = your student ID
+cvbase = read.csv("PsyCoronaBaselineExtract.csv")
+cvbase <- cvbase[sample(nrow(cvbase), 40000), ] # 40000 rows
+
+```
+
+
+```{r}
+
+#number of observations
+num_samples <- 40000
+
+#Determine the percentage of observations where any of the remaining columns contain a missing value
+# Omitting columns associated with Employment Status and Corona Close proximity from the calculation
+
+cvbase %>%
+  select(-matches("employstatus_\\d"), -matches("coronaClose_\\d")) %>%
+  filter_all(any_vars(is.na(.))) %>%
+  nrow() / num_samples
+
+
+
+```
+The output suggests that after excluding the columns related to employment status (employstatus) and proximity to COVID-19 cases (coronaClose), 11.98% of the rows in the dataset still contain at least one missing value. This figure represents a subset of the dataset where missingness persists even after removing the variables with a large number of missing values, which we've identified as "obscene."
+
+This reduced percentage of missing data indicates that while the excluded variables contributed a significant portion of missingness, there are still other variables with incomplete data that need to be addressed. Depending on the context and the importance of complete data for your analysis, you might consider further imputation strategies or analysis methods robust to missing data.
+
+```{r}
+# Determine the proportion of missing data for individual columns in the dataset
+# Omitting columns associated with Employment Status and Corona Close proximity from the calculation
+
+
+cvbase %>%
+  select(-matches("employstatus_\\d"), -matches("coronaClose_\\d")) %>%
+  summarise(across(everything(), ~mean(is.na(.)))) %>%
+  t() # Transpose for better readability
+
+```
+The output provided represents the proportions of missing values (expressed as a decimal) for each variable in the `cvbase` dataset. Each entry corresponds to a different variable, indicating the fraction of the dataset's observations where the value is missing (`NA`). For instance:
+In the given output, the `rankOrdLife_` variables stand out with exactly the same proportion of missing data, at approximately 4.2475%, which suggests a pattern in the way the data might have been collected or recorded. This uniformity across six different variables related to life value ranking may imply a significant section of respondents skipped this set of questions, or there was an issue in the data collection process for these particular items.
+
+The `consp01`, `consp02`, and `consp03` variables, which may relate to beliefs in conspiracy theories, also show a relatively high and increasing proportion of missing values, with `consp03` peaking at nearly 4%. This could suggest that as the questions progressed, participants were increasingly likely to not respond, which could be due to the sensitive nature of the questions or respondent fatigue.
+
+The rest of the variables show lower proportions of missing data, which might not be considered as significant in terms of impacting the overall dataset. However, the variables related to COVID-19 personal behaviors and risk assessments have a consistent missing data proportion of around 0.3%, which is relatively low but could still be important depending on the total number of variables and the study's margin of error.
+
+The fact that `coded_country` has no missing data is significant in that it indicates complete country information for all observations, which can be valuable for demographic segmentation and analysis. 
+
+Overall, the significant proportion of records with at least one instance of missing data appears to be within the `rankOrdLife_` and `consp` variables, indicating these areas may require careful consideration for data imputation or cleaning.
+
+The outright removal of these records would result in a significant reduction of the dataset, potentially skewing the analysis due to a loss of a representative sample.
+
+To address this challenge, two strategies are considered:
+
+For individual columns, imputation could be an option where missing values are replaced with the column's average, assuming the data does not have notable outliers, or with the median to mitigate the effect of outliers.
+Alternatively, the approach of excluding any rows with missing values could be utilized, capitalizing on the data's predominantly complete records. This method seems preferable since the percentage of missing data per column is relatively minor.
+A more comprehensive plan for managing missing data will be outlined in a subsequent section devoted to data preprocessing.
+
+Notably, the coded_country column is fully populated, with no missing values observed. This is in contrast to other variables within the dataset and merits further investigation to understand the complete data capture in this specific column, which could indicate a mandatory field within the data collection process or a high level of compliance from respondents in providing their country information.An examination is needed to understand the reasons behind the complete data for the `coded_country` column, which is in stark contrast with the other columns that exhibit missing values.
+
+```{r}
+# List all unique values in the country column.
+sort(unique(cvbase$coded_country))
+```
+The presence of an empty string ("") suggests that there might be instances where the country information was not provided or was unable to be captured. This needs to be noted as it may affect the completeness of the dataset regarding geographical representation.To maintain uniformity in data formatting across all columns, these empty strings will be converted to NA in subsequent data cleaning steps. This adjustment will align the coded_country column with the rest of the dataset, where missing values are consistently represented by NA.
+
+
+**Data Preprocessing**
+
+Prior to delving further into the dataset's nuances, it is crucial to undertake some data cleansing activities. The data preprocessing steps we implement at this juncture will be instrumental for the analytical tasks outlined in Questions 2 and 3. To ensure brevity in our discourse, attention will be specifically directed to only those columns that are pertinent to our forthcoming analysis.
+
+For the cvbase dataset, we're going to update the records where the country name is missing, indicated by an empty string "", and replace those with NA to maintain consistency across the dataset. This replacement ensures that all missing values are uniformly represented, allowing for more accurate data analysis and manipulation downstream.
+
+```{r}
+cvbase <- cvbase %>%
+  mutate(coded_country = ifelse(coded_country == "", NA, coded_country))
+
+# Check if there are any NAs in the coded_country column now
+any(is.na(cvbase$coded_country))
+
+```
+The output [1] TRUE indicates that the final command any(is.na(cvbase$coded_country)) found at least one NA value in the coded_country column of the cvbase dataframe.
+
+The reason for performing this operation is to ensure that missing values in the coded_country column are consistently represented by NA. This is important because:
+
+Having a consistent representation of missing values allows for accurate counts, summaries, and other analytical procedures that handle missing data appropriately.
+It avoids the confusion of having different indicators for missing data (such as an empty string and NA), which could lead to errors in data analysis or modeling.
+It prepares the dataset for functions that have specific ways of dealing with NA values, such as na.omit, which removes any rows with missing data, or complete.cases, which identifies rows that have no missing values.
+By converting empty strings to NA, the dataset's integrity is maintained, ensuring that any subsequent data processing steps are based on a complete and consistent set of data.
+
+
+```{r}
+# Replace missing values in all columns that match the pattern "employstatus_" with 0s
+cvbase <- cvbase %>%
+  mutate(across(matches("^employstatus_\\d"), ~ ifelse(is.na(.), 0, .)))
+
+sort(unique((cvbase$employstatus_1)))
+
+```
+Specifically, it replaces missing values (NA) with zeros (0) across all columns of the cvbase data frame that match the pattern "employstatus_" followed by any number.After performing this operation, the script uses the sort() and unique() functions to display the unique values from the employstatus_1 column of the modified data frame. The output "[1] 0 1" indicates that, after replacement, the employstatus_1 column contains only two unique values, 0 and 1, meaning all missing data points have been successfully replaced with zeros. The operation ensures consistency within the employment status variables by eliminating NA values that may interfere with further analysis.
+
+```{r}
+sort(unique(cvbase$gender))
+```
+In the given dataset, the variable 'gender' has been encoded with the integers {1, 2, 3}. Referring to the associated codebook allows us to interpret these codes where '1' denotes Female, '2' represents Male, and '3' is used for Other gender categories.
+
+The command `sort(unique(cvbase$gender))` lists the distinct, sorted values present in the 'gender' column, confirming that there are three unique, numerically coded gender categories.
+
+However, since 'gender' is a qualitative variable, the numeric coding doesn’t have intrinsic order or magnitude. In other words, the numbers are labels and do not have a numeric relationship where higher or lower values have meaning.
+
+To enhance clarity and prevent any misinterpretation of these numerical codes as having a quantitative relationship, the recommendation is to transform these numeric codes into descriptive string labels that accurately reflect the gender categories they represent. This would align the data representation with its categorical nature.
+
+
+To enhance clarity in the dataset, the gender column will be updated from numerical codes to textual representations. We will apply a transformation where '1' is replaced with "Female", '2' with "Male", and '3' with "Others". 
+```{r}
+cvbase <- cvbase %>%
+mutate(gender = recode(gender,
+`1` = "Female", `2` = "Male", `3` = "Others"))
+sort(unique(cvbase$gender))
+```
+This step ensures the gender data is more intuitive and comprehensible for anyone analyzing the dataset
+
+
+
+
+```{r}
+sort(unique(cvbase$happy))
+```
+The output displays the unique values of the 'happy' variable in the `cvbase` dataset sorted in ascending order. These values range from 1 to 10, indicating that the responses for happiness are measured on a scale of 1 to 10, with 1 possibly signifying the least happy and 10 the most happy. This numeric range provides a quantitative measure of happiness among the participants in the study, allowing for statistical analysis of happiness levels across various factors within the dataset.
+
+```{r}
+# According to the codebook, happiness (happy) is in range [1, 10].
+# As there are no neutral selection to this question, we will offset it t
+cvbase <- cvbase %>%
+mutate(happy = ifelse(happy <= 5, happy - 6, happy - 5))
+sort(unique(cvbase$happy))
+
+```
+The code snippet provided is performing a transformation on the 'happy' variable in the `cvbase` dataset. Specifically, it's adjusting the scale of the happiness measure. For values of 'happy' that are less than or equal to 5, it subtracts 6 from the value. For values greater than 5, it subtracts 5. This operation centers the scale around zero, where negative values now indicate a happiness level below the midpoint, and positive values indicate a happiness level above the midpoint.
+
+After the transformation, the `sort(unique(cvbase$happy))` function is called to display the unique, sorted values of the 'happy' variable post-mutation. This would show the new range of values for 'happy', which, depending on the original distribution, will be centered around zero and reflect the adjustment made by either subtracting 5 or 6. This can be useful for analyses that require a centered scale, such as certain statistical tests or data visualization strategies.
+
+The 'happy' variable's rescaling in the dataset is a corrective measure taken in response to its current range, which spans from 1 to 10, possibly not centering around a neutral point. This rescaling process aims to align the measurement scale of 'happy' with other similar variables within the dataset that follow a pattern of expressing sentiment or opinion on a scale that includes both negative and positive values, reflecting degrees of agreement, disagreement, or intensity of a sentiment.
+
+The process involves adjusting the values of 'happy' so that the midpoint of the original scale (5.5, since the scale is 1 to 10) becomes the new zero point, with values below this midpoint becoming negative to represent less happiness, and values above it becoming positive to represent more happiness. This re-centering ensures that the variable can be directly compared with other variables that measure sentiments on a negative-to-positive scale, ensuring uniformity in the representation of sentiments across different measures within the dataset.
+
+By re-coding 'happy' in such a manner, we are establishing a common ground for all variables that capture sentiments, attitudes, or opinions, whether they range from neutral to positive or negative to positive. This standardization is crucial for any subsequent analyses, such as regression or correlation, where the relationship between 'happy' and other similar variables is investigated. It ensures that a value of zero on any of these scales represents a neutral sentiment, while positive and negative values represent varying degrees of positive and negative sentiments, respectively.
+
+
+```{r}
+sort(unique(cvbase$lifeSat))
+```
+```{r}
+
+```
+
+The image contains a line of R code and its output. The R code executes a command to sort the unique values of the 'lifeSat' column within the 'cvbase' dataframe and the resulting output displays these values in ascending order: 1, 2, 3, 4, 5, 6. This output indicates that the 'lifeSat' (presumably 'life satisfaction') column in the dataset has six unique values, ranging from 1 to 6. If this is being examined after data transformation, it suggests that the range of 'life satisfaction' scores in the dataset spans these six levels, possibly representing different degrees of satisfaction reported by the participants.
+
+```{r}
+cvbase <- cvbase %>%
+mutate(lifeSat = ifelse(lifeSat <= 3, lifeSat - 4, lifeSat - 3))
+sort(unique(cvbase$lifeSat))
+```
+
+The output [1] -3 -2 -1 1 2 3 indicates the new range of unique values in the lifeSat column after the transformation. This transformation is likely done to center the scale around 0, removing the neutral option (since there is no 0 in the output) and allowing for a symmetrical distribution of satisfaction scores around a neutral middle point, which is a common practice in data preprocessing for certain types of analyses.
+
+```{r}
+sort(unique(cvbase$consp01))
+```
+According to the codebook, conspiracy range is (consp01, consp02, consp03) is in range [1, 10].
+
+```{r}
+cvbase <- cvbase %>%
+  mutate(
+    consp01 = ifelse(consp01 <= 5, consp01 - 6, consp01 - 5),
+    consp02 = ifelse(consp02 <= 5, consp02 - 6, consp02 - 5),
+    consp03 = ifelse(consp03 <= 5, consp03 - 6, consp03 - 5)
+  )
+sort(unique(cvbase$consp01))
+sort(unique(cvbase$consp02))
+sort(unique(cvbase$consp03))
+
+
+```
+
+This code adjusts the consp01, consp02, and consp03 columns to a new range[-6,5], centered around zero, to potentially align with a neutral point for analysis. 
+
+
+```{r}
+sort(unique(cvbase$lone01))
+```
+According to the codebook, loneliness range is (lone01, lone02, lone03) is in range [1, 5].
+
+```{r}
+cvbase <- cvbase %>%
+  mutate(
+    lone01 = lone01 - 3,
+    lone02 = lone02 - 3,
+    lone03 = lone03 - 3
+  )
+
+# To check the transformation, sort and view unique values for each column
+sort(unique(cvbase$lone01))
+sort(unique(cvbase$lone02))
+sort(unique(cvbase$lone03))
+
+```
+This code adjusts the lone01, lone02, lone03 columns to a new range[-2,1], centered around zero, to potentially align with a neutral point for analysis. 
+
+
+In R, the treatment of categorical data is efficiently handled by factors, which are special variables that cater to qualitative data by recognizing its categorical characteristics. To utilize R's capabilities for handling such data, it is standard practice to convert categorical variables into factors. This conversion is not only methodologically sound but also ensures more memory-efficient storage.
+
+For the dataset at hand, two variables that are categorical in nature have been identified: gender and coded_country. The gender variable, despite being currently coded numerically, holds categorical gender information. Similarly, coded_country represents different countries but contains no ordinal information that can be discerned from the numerical value alone. Consequently, both these variables will be transformed into factors.
+
+This transformation can be executed with the following code in R:
+
+```{r}
+cvbase <- cvbase %>%
+  mutate_at(vars(gender, coded_country), as.factor)
+
+```
+Executing this code will convert both the gender and coded_country columns from numerical to factor types, allowing for appropriate statistical analysis and data operations that are relevant for categorical data.
+
+
+
+Let's check the data alterations we've applied to the dataframe with a quick overview using the `summary()` function.
+```{r}
+summary(cvbase)
+```
+The dataframe has been updated successfully. We're now ready to move on after completing the necessary data preprocessing for the upcoming data analysis tasks.
+
+**Data Distribution**
+Next, we’ll take a closer look at the data distribution. Having finished the preprocessing steps, we’re set to delve into the dataset more deeply. We'll group the data by their respective concepts, which will help us discern variations across similar variables.
+
+**Distributions of Happiness, Life Satisfaction, and Meaning in Life**
+
+```{r}
+# Set plot dimensions
+options(repr.plot.width = 8, repr.plot.height = 20)
+
+# Combine the columns into a new data frame for plotting
+data_to_plot <- data.frame(
+  Happy = cvbase[["happy"]],
+  Life_Satisfaction = cvbase[["lifeSat"]],
+  Meaning_in_Life = cvbase[["MLQ"]]
+)
+
+# Create the boxplot
+boxplot(
+  data_to_plot,
+  main = "Distributions of Happiness, Life Satisfaction, and Meaning in Life",
+  ylab = "Level",
+  na.action = na.exclude,
+  xaxt = "n"
+)
+
+# Add x-axis labels
+axis(1, at=1:3, labels=c("Happy", "Life Satisfaction", "Meaning in Life"))
+
+```
+The graph is a comparative boxplot showing the distributions of scores for Happiness, Life Satisfaction, and Meaning in Life.
+From this graph, we can deduce:
+Happiness scores tend to be higher than Life Satisfaction and Meaning in Life scores, as indicated by both the median and the range of the box.
+Life Satisfaction has a slightly lower median compared to Happiness and has a tighter interquartile range, suggesting that responses are more consistently centered around the median.
+Meaning in Life has the lowest median value and the smallest range, which might suggest that respondents were generally more consistent in their ratings, but it leans towards the lower end of the scale.
+Conclusions that could be drawn include:
+
+Participants tend to report positive levels of happiness and life satisfaction, with happiness being slightly higher than life satisfaction.
+There is a wider range of responses concerning the meaning in life, suggesting diverse perceptions about this aspect among participants.
+The absence of outliers in all three distributions suggests that extreme values are either not present or have been preprocessed out of the dataset.
+These insights can be important for understanding the overall well-being of participants during the COVID-19 pandemic and could be linked to their willingness to engage in pro-social behaviors. For instance, those with higher levels of life satisfaction or meaning in life might be more motivated to contribute to the common good. However, further analysis, including multivariate techniques and inferential statistics, would be required to establish any causal or correlative relationships.
+
+
+**Life Value Rank**
+
+```{r}
+# Load the reshape2 package
+library(reshape2)
+cvbase_long <- melt(cvbase, measure.vars = c("rankOrdLife_1", "rankOrdLife_2", "rankOrdLife_3", "rankOrdLife_4","rankOrdLife_5", "rankOrdLife_6"))
+
+# Create the bar plot with proper names for the x-axis
+ggplot(cvbase_long, aes(x = value, fill = variable)) + 
+  geom_bar(position = "dodge", stat = "count") + 
+  scale_x_discrete(labels = c("A:Beauty", "B:Achievement", "C:Victory", "D:Friendship", "E:Love", "F:Empathy")) +
+  labs(x = "Life Value Rank", y = "Frequency", fill = "Ranking") + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x labels for better readability
+```
+Based on the bar graph showing the distribution of rankings for different life values during COVID-19, we can infer how the pandemic might have influenced people’s priorities. The high rankings for "E: Love" and "F: Empathy" suggest that during challenging times, like those experienced during the COVID-19 pandemic, individuals may place a greater emphasis on close relationships and emotional support. These values likely became more central as people sought connection and understanding in the face of social distancing measures and global uncertainty.
+
+The lower rankings for "A: Beauty" might reflect a shift in focus away from external appearances and towards more substantive forms of value during the pandemic, when personal interactions were limited and many faced significant life changes or stress.
+
+The moderate distribution of "B: Achievement" and "C: Victory" across rankings could indicate that while personal success remained important, its significance was possibly tempered by the broader context of the pandemic, where collective health and well-being might have taken precedence.
+
+"D: Friendship" shows an even spread across rankings, emphasizing that while personal connections are important, the context of the pandemic may have led to a reevaluation of how individuals define and maintain friendships, especially with physical interactions being limited.
+
+The 'NA' category in the original bar graph might suggest that some respondents did not rank all values or that data is missing for other reasons.
+
+Overall, the COVID-19 pandemic appears to have prompted a re-assessment of values, with an increased focus on love, empathy, and the quality of relationships over individualistic or aesthetic concerns.
+
+
+
+**Age & Gender of Participants**
+
+```{r}
+
+# Create a plot visualising the age and gender of the participants.
+options(repr.plot.width = 15, repr.plot.height = 10)
+filtered_cvbase <- cvbase %>% filter(!is.na(age) & !is.na(gender)) %>% mutate(age = recode(age,
+`1` = "18-24", `2` = "25-34", `3` = "35-44", `4` = "45-54", `5` = "55-64", `6` = "65-75", `7` = "75-85", `8` = "85+"))
+# Define new colours for the gender groups
+colours <- c("Female" = "#E69F00", "Male" = "#56B4E9", "Others" = "#F0E442")
+
+ggplot(filtered_cvbase, aes(x = age, fill = gender)) + labs(
+title = "Age & Gender of Participants", x = "Age Group",
+y = "Participants",
+fill = "Gender"
+)+
+geom_bar(position = "stack") + scale_fill_manual(values = colours) + theme_bw() +
+  theme(
+    plot.title = element_text(size = 24),
+    axis.title.x = element_text(size = 18),
+    axis.title.y = element_text(size = 18),
+    axis.text.x = element_text(size = 16, angle = 45, hjust = 1), # Angle the x labels for better readability
+    axis.text.y = element_text(size = 16),
+    legend.title = element_text(size = 18),
+    legend.text = element_text(size = 16),
+    legend.key.size = unit(1.25, "cm")
+  )
+
+```
+
+The stacked bar graph indicates a clear trend in the demographic composition of the survey participants. The most represented age group spans from 25 to 34 years, suggesting a strong engagement from individuals who are likely in the early stages of their careers or are completing advanced education. While participation across the age spectrum shows variability, each age group maintains a consistent gender ratio with females consistently outnumbering males. This could suggest either a higher willingness among females to participate in surveys of this nature or a reflection of the specific population that was targeted or had access to this survey. Non-binary representation is notably scant across all age groups, which not only challenges the inclusivity of the data but also raises questions about the outreach and engagement strategies employed in the survey. It suggests a potential underrepresentation of gender-diverse individuals, which could skew the findings and their applicability to non-binary populations. Given this disproportion, conclusions drawn from this survey regarding gender-diverse perspectives on the surveyed topics would lack robustness and might not be reflective of broader societal views.
+Moreover, the decline in participation with increasing age could point to a digital divide or a difference in interest or stake in the survey topic among older demographics. It's also plausible that the mode of distribution of the survey inherently favored younger, more tech-savvy audiences, hence their overrepresentation.
+
+
+**Social Contact in the Past 7 Days**
+
+```{r}
+
+# Loading necessary libraries
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+# Converting the contact frequency columns to factors for better plotting
+cvbase$isoFriends_inPerson <- factor(cvbase$isoFriends_inPerson, levels = 1:7, ordered = TRUE)
+cvbase$isoOthPpl_inPerson <- factor(cvbase$isoOthPpl_inPerson, levels = 1:7, ordered = TRUE)
+cvbase$isoFriends_online <- factor(cvbase$isoFriends_online, levels = 1:7, ordered = TRUE)
+cvbase$isoOthPpl_online <- factor(cvbase$isoOthPpl_online, levels = 1:7, ordered = TRUE)
+
+# Melting the data for easier plotting with ggplot
+cvbase_melted <- cvbase %>%
+  select(isoFriends_inPerson, isoOthPpl_inPerson, isoFriends_online, isoOthPpl_online) %>%
+  pivot_longer(
+    cols = c(isoFriends_inPerson, isoOthPpl_inPerson, isoFriends_online, isoOthPpl_online),
+    names_to = "ContactType",
+    values_to = "Frequency"
+  )
+
+# Create the plot
+ggplot(data = cvbase_melted, aes(x = ContactType, fill = Frequency)) +
+  geom_bar(position = "fill") +  # Stacked bar plot
+  scale_y_continuous(labels = scales::percent_format()) +  # Convert counts to percentages
+  labs(title = "Social Contact in the Past 7 Days", 
+       x = "Type of Contact", 
+       y = "Percentage of Responses") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels
+```
+The bar graph displays the distribution of social contact over the past 7 days, categorized by the type of interaction—whether in-person with friends, in-person with others, online with friends, or online with others. Each bar is segmented into frequencies from 1 to 7, with each color representing a different frequency level.
+
+From this graph, one could interpret that:
+
+1. Social interaction frequency varies across the four categories, with different patterns evident for in-person vs. online contact.
+2. There seems to be a higher frequency of online contact compared to in-person contact, which may reflect social distancing practices or the general trend towards digital communication, possibly amplified by COVID-19 restrictions.
+3. The ‘NA’ segment in the graph indicates missing data, suggesting that some respondents did not provide information for all types of social contact.
+4. The proportions within each type of contact give insight into the relative frequency of each interaction level, which could be indicative of the respondents' access to digital tools or their compliance with public health guidelines during the pandemic.
+
+This visual is a helpful tool for understanding the social behavior of participants in the context of a pandemic, where social norms and possibilities for interaction have shifted considerably.
+
+
+
+
+```{r}
+
+par(mar=c(8, 4, 4, 1) + 0.1)
+data_to_plot <- data.frame(
+  Friends_InPerson = cvbase[["isoFriends_inPerson"]],
+  Others_InPerson = cvbase[["isoOthPpl_inPerson"]],
+  Friends_Online = cvbase[["isoFriends_online"]],
+  Others_Online = cvbase[["isoOthPpl_online"]]
+)
+
+# Create the boxplot
+boxplot(
+  data_to_plot,
+  main = "Social Contact in the Past 7 Days",
+  ylab = "Frequency Level",
+  na.action = na.exclude,
+  xaxt = "n"
+)
+
+# Add x-axis labels with a 45 degree angle
+axis(1, at=1:4, labels=c("Friends In-Person", "Others In-Person", "Friends Online", "Others Online"),las =3)
+
+
+
+```
+This reflects a global shift in social behavior due to the pandemic, where individuals and communities leveraged technology to stay connected. The extent of online contact could be indicative of how well people adapted to technology for social needs.
+
+
+
+**Pro-Social Behaviors Related to COVID-19**
+
+```{r}
+
+# Set the graphical parameters to accommodate for label size
+par(mar=c(8, 4, 4, 1) + 0.1)
+
+# Combine the relevant columns into a new data frame for plotting
+pro_social_data <- data.frame(
+  Help_Others = cvbase[["c19ProSo01"]],
+  Make_Donations = cvbase[["c19ProSo02"]],
+  Protect_Vulnerable = cvbase[["c19ProSo03"]],
+  Personal_Sacrifices = cvbase[["c19ProSo04"]]
+)
+
+# Create the boxplot
+boxplot(pro_social_data, 
+        main = "Pro-Social Behaviors Related to COVID-19", 
+        ylab = "Responses", 
+        #xlab = "Pro-Social Behavior", 
+        #las = 2, # Makes the labels perpendicular to the axis
+        col = c("lightblue", "lightgreen", "lightcoral", "lightgoldenrod"), # Optional colors
+        na.action = na.exclude, # Exclude NA values
+        xaxt = "n"
+)
+
+# Adding custom axis labels for clarity
+axis(1, at=1:4, 
+     labels=c("Help Others", "Make Donations", "Protect Vulnerable", "Personal Sacrifices"), las =3) # Rotate axis labels for clarity
+```
+From the given plot, we can conclude that the responses for each behavior are fairly consistent. The median lines are relatively at the same level across all behaviors, suggesting that on average, participants are similarly willing to engage in different forms of pro-social behaviors. There aren't any visible outliers, and the spread of the data is comparable across behaviors, although "Personal Sacrifices" might have a slightly wider IQR, indicating more variability in responses.
+
+**Loneliness during COVID-19 Pandemic**
+
+```{r}
+# Set plot dimensions
+options(repr.plot.width = 8, repr.plot.height = 10)
+
+# Create a boxplot for loneliness variables
+boxplot(
+  cvbase[, grep("^lone", names(cvbase))], # This will select all columns that start with 'lone'
+  na.action = na.exclude, # Exclude NA values from the boxplot
+  xaxt = "n", # Remove default x-axis labels
+  col = c("skyblue", "palegreen", "salmon") # Set colors for each box
+)
+
+# Custom labels for the x-axis based on the 'loneliness' variables
+custom_labels <- c("Felt Lonely", "Felt Isolated", "Felt Left Out")
+
+# Add custom labels to the x-axis
+axis(side = 1, at = 1:length(custom_labels), labels = custom_labels) # las=2 for perpendicular axis labels
+
+# Add title and axis labels
+title(
+  main = "Loneliness during COVID-19 Pandemic",
+  ylab = "Frequency Level",
+  cex.main = 1, # Control the size of the main title
+  cex.lab = 1 # Control the size of the axis labels
+)
+
+
+```
+The spread of the data, particularly for "Felt Isolated," suggests there was considerable variability in people's experiences. Some individuals felt significantly more isolated than others, which could be due to various factors such as living arrangements, personal resilience, and the availability of online communication tools.The similarities in the distributions of these feelings suggest that the pandemic had a somewhat uniform impact on these aspects of social well-being across the surveyed population. There wasn't one feeling that stood out as being significantly more or less prevalent than the others.Knowing that isolation shows a wider range and possibly higher median response, interventions aimed at reducing the pandemic's impact on mental health might focus more on reducing feelings of isolation.
+
+
+**Boredom during COVID-19 Pandemic**
+
+```{r}
+
+
+# Set plot dimensions
+options(repr.plot.width = 8, repr.plot.height = 6)
+
+# Create a boxplot for boredom variables
+boxplot(
+  cvbase[, c("bor01", "bor02", "bor03")], 
+  main = "Boredom during COVID-19 Pandemic",
+  ylab = "Frequency Level",
+  xaxt = "n",
+  col = c("skyblue", "palegreen", "salmon"),
+  outline = FALSE # This will remove outliers
+)
+
+# Custom labels for the x-axis
+labels <- c("Wish Time Faster", "Time Slow", "Feel In Control")
+
+# Add custom labels to the x-axis
+axis(1, at = 1:3, labels = labels)
+
+# Ensure the labels are readable
+par(mar = c(5, 4, 4, 2) + 0.1)  # Adjust the margins
+
+```
+There's a balance of feelings regarding the desire for time to pass more quickly, as indicated by the median around the neutral point, though there's variation in responses.A slight overall agreement that time feels like it's moving slowly could suggest that many people found the days monotonous or lengthy, often associated with limited activities during strict lockdown measures.The sense of control over time is varied but leans toward agreement. This could reflect that individuals found ways to manage their time effectively, perhaps by picking up new hobbies, working remotely, or spending time with family.In conclusion, while individuals experienced boredom differently during the COVID-19 pandemic, a general sense of slowed time and a robust sense of control over personal schedules were notable. 
+
+
+**Number of People Knowing Someone with COVID-19**
+
+```{r}
+par(mar=c(8, 4, 4, 1) + 0.1)
+
+# Count the number of occurrences for each category
+counts <- colSums(cvbase[, grep("^coronaClose_", names(cvbase))], na.rm = TRUE)
+
+# Create names for the bars
+bar_names <- c("Myself", "Family", "Friend", "Someone I Know", "Someone Else", "No One")
+
+# Create the bar plot
+barplot(counts,
+        names.arg = bar_names,
+        col = rainbow(length(counts)), # This adds different colors to each bar
+        main = "Number of People Knowing Someone with COVID-19",
+        #xlab = "Relationship",
+        ylab = "Count",
+        las = 2,  cex.lab = 0.4) # Makes the x-axis labels perpendicular for better readability
+
+```
+The bar graph displays the count of people who know someone with COVID-19, categorized by the closeness of their relationship to the infected individual or their awareness of such cases.The count increases slightly from the 'Someone I Know' category, indicating respondents are aware of acquaintances or distant contacts with the virus. The largest bar indicates that the majority of respondents do not know anyone personally who has had COVID-19.Overall, this bar graph suggests that within this survey population, the majority of people have not been in direct contact with COVID-19 cases, which could imply a degree of separation between the respondents and those infected. This might reflect the effectiveness of isolation measures or could be due to the respondents' social circles and the spread of the virus at the time the data was collected.
+
+**COVID-19 Personal Preventative Behaviors**
+
+```{r}
+# Set plot dimensions
+options(repr.plot.width=8, repr.plot.height=6)
+
+# Calculate sums for each behavior
+behavior_sums <- sapply(cvbase[, grep("^c19perBeh", names(cvbase))], sum, na.rm=TRUE)
+
+# Create a bar plot
+barplot(behavior_sums, 
+        names.arg=c("Wash Hands", "Avoid Crowds", "Self Quarantine"),
+        main="COVID-19 Personal Preventative Behaviors",
+        ylab="Total Frequency",
+        col=c("skyblue", "palegreen", "salmon"),
+        ylim=c(0, max(behavior_sums) + 10)) # Adjust ylim as necessary
+
+
+```
+The highest frequency of people avoiding crowds indicates that social distancing was the most commonly adopted preventive behavior. This suggests that the public understood and acted upon the advice that avoiding close contact with others could reduce the spread of COVID-19 whereas the second-highest frequency for washing hands implies that personal hygiene was also a significant concern and widely practiced.
+
+
+*2. Focus country vs all other countries as a group.*
+
+**(a) Identify your focus country from the accompanying list (FocusCountryByID.pdf). How do participant responses (attributes) for your focus country differ from the other countries in the survey as a group?**
+
+
+
+```{r}
+
+# Split the data for analysis.
+cvbase_hungary <- cvbase %>%
+  filter(coded_country == "Hungary") %>%
+  select_if(is.numeric)
+
+cvbase_others <- cvbase %>%
+  filter(coded_country != "Hungary") %>%
+  select_if(is.numeric)
+
+# Compute the range of values of all columns.
+ranges_hungary <- cvbase_hungary %>%
+  summarise(across(where(is.numeric), ~ max(., na.rm = TRUE) - min(., na.rm = TRUE)))
+
+ranges_others <- cvbase_others %>%
+  summarise(across(where(is.numeric), ~ max(., na.rm = TRUE) - min(., na.rm = TRUE)))
+
+# Pivot the data to long format for plotting or further analysis
+cvbase_hungary_long <- pivot_longer(cvbase_hungary, cols = everything(), names_to = "variable", values_to = "value")
+cvbase_others_long <- pivot_longer(cvbase_others, cols = everything(), names_to = "variable", values_to = "value")
+
+# Optionally, we can merge the two to compare them directly
+range_comparison <- bind_rows(
+  mutate(cvbase_hungary_long, Country = "Hungary"),
+  mutate(cvbase_others_long, Country = "Others")
+)
+
+
+
+
+
+```
+
+**Comparative Analysis of Loneliness**
+
+```{r}
+# Select the loneliness variables
+loneliness_vars <- c("lone01", "lone02", "lone03")
+
+# Create a combined data frame for plotting
+cvbase_combined <- bind_rows(
+  mutate(cvbase_hungary, Group = "Hungary")[, c(loneliness_vars, "Group")],
+  mutate(cvbase_others, Group = "Others")[, c(loneliness_vars, "Group")]
+)
+
+# Pivot to long format for boxplot
+cvbase_long <- cvbase_combined %>% 
+  pivot_longer(cols = loneliness_vars, names_to = "LonelinessType", values_to = "Value")
+
+# Create a comparative boxplot
+ggplot(cvbase_long, aes(x = LonelinessType, y = Value, fill = Group)) +
+  geom_boxplot() +
+  #scale_fill_manual(values = c("Hungary" = "orange", "Others" = "green")) +
+  labs(title = "Comparative Analysis of Loneliness", x = "Type of Loneliness", y = "Response Level") +
+  theme_minimal()
+
+```
+The output is a comparative boxplot that displays the response levels to questions regarding feelings of loneliness for two groups: Hungary and Others. Each boxplot represents the distribution of responses for a specific type of loneliness (lone01, lone02, lone03), with Hungary's data represented in red and the Other group's data in blue.
+
+Participants from Hungary tend to report higher levels of feeling lonely (lone01), isolated (lone02), and left out (lone03) than participants from other countries, as indicated by the higher median values in the orange boxplots for Hungary.The variability or spread of responses, as depicted by the interquartile range (height of the boxplots), is similar between Hungary and the other countries, suggesting that while the central tendency is different, the diversity in how people experience loneliness is comparable across groups.The comparative boxplots suggest that the feeling of being isolated (lone02) does not vary much between Hungary and other countries, as the medians and IQRs are quite similar. However, the feelings of being generally lonely (lone01) and feeling left out (lone03) seem to be more pronounced in Hungary compared to the other countries.From these observations, we can infer that in the context of the COVID-19 pandemic, respondents from Hungary experienced higher levels of loneliness compared to the aggregated responses from other countries. This may reflect cultural, social, or pandemic management differences that could affect how individuals in Hungary experienced and reported loneliness during the early stages of the pandemic.
+
+
+
+
+**Comparative Analysis of Boredom**
+```{r}
+# Load the required libraries
+library(ggplot2)
+library(dplyr)
+
+
+# Subset the data for Hungary and other countries
+cvbase_hungary_01 <- cvbase %>%
+  filter(coded_country == "Hungary") %>%
+  select_if(is.numeric) %>% select(happy, lifeSat, MLQ)
+cvbase_others_01 <-  cvbase %>%
+  filter(coded_country != "Hungary") %>%
+  select_if(is.numeric) %>% select(happy, lifeSat, MLQ)
+
+# Calculate the mean (or median) for Hungary and other countries
+mean_hungary <- colMeans(cvbase_hungary_01, na.rm = TRUE)
+
+
+
+# Combine the data into a single dataframe for plotting
+combined_data <- bind_rows(
+  mutate(cvbase_hungary, Group = "Hungary"),
+  mutate(cvbase_others, Group = "Others")
+)
+
+# Pivot to long format for ggplot
+long_data <- combined_data %>%
+  pivot_longer(cols = bor01:bor03, names_to = "Boredom_Type", values_to = "Response")
+
+# Generate boxplot
+ggplot(long_data, aes(x = Boredom_Type, y = Response, fill = Group)) +
+  geom_boxplot() +
+  labs(title = "Comparative Analysis of Boredom", x = "Type of Boredom", y = "Response Level") +
+  #scale_fill_brewer(palette = "Set1") +
+  theme_minimal()
+```
+The output is a boxplot depicting the comparative analysis of boredom levels as reported by participants from Hungary (in red) and from other countries (in teal). Each boxplot represents the distribution of responses for a specific type of boredom-related statement: bor01 ("I wish time would go by faster"), bor02 ("Time is moving very slowly"), and bor03 ("I feel in control of my time").
+
+From the plot, it seems that for all three boredom-related questions, the responses from Hungary and from other countries show similar distributions, with a median around the center of the scale, which could indicate a neutral overall response or a balanced mix of agreements and disagreements. The IQRs overlap considerably, suggesting that there is no significant difference between the responses from Hungary and other countries regarding these aspects of boredom. The warning message "Removed 474 rows containing non-finite values (stat_boxplot)" indicates that some rows with NA or infinite values were excluded from the analysis.
+
+
+
+**Comparative Analysis of Conspiracy Beliefs**
+```{r}
+# Combine the datasets while marking each row with the appropriate group
+combined_data <- bind_rows(
+  mutate(cvbase_hungary, Group = "Hungary"),
+  mutate(cvbase_others, Group = "Others")
+)
+
+# Pivot the combined data into a long format for easier plotting with ggplot2
+long_data <- combined_data %>%
+  pivot_longer(cols = c(consp01, consp02, consp03), names_to = "Conspiracy_Type", values_to = "Response")
+
+# Create a boxplot to compare conspiracy belief levels
+ggplot(long_data, aes(x = Conspiracy_Type, y = Response, fill = Group)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparative Analysis of Conspiracy Beliefs",
+    x = "Type of Conspiracy",
+    y = "Response Level",
+    fill = "Group"
+  ) +
+  theme_minimal()
+```
+This boxplot shows a comparative analysis of conspiracy beliefs between Hungary and other countries.
+Each box represents the range of responses for a specific conspiracy-related statement:
+
+**consp01** - Belief in undisclosed significant world events.
+**consp02** - Belief that politicians hide their true motives.
+**consp03** - Belief in government surveillance over citizens.
+
+The medians for both groups are generally above 0, suggesting a tendency toward agreement or belief in the conspiracies across both Hungary and other countries, but none of the medians appears to be strongly positive, indicating moderate agreement.
+The spread (interquartile range) of responses is quite similar for both Hungary and other countries, showing no dramatic difference in the diversity of opinions.
+There are outliers, especially for the first type of conspiracy (consp01), indicating that there are individuals with extremely strong beliefs or disagreements that fall outside the general pattern of responses.In conclusion, while both groups have a general tendency towards belief in the conspiracy statements, there does not appear to be a marked difference between the conspiracy belief levels of participants from Hungary and those from other countries in the dataset.. The similarities in responses could imply a widespread influence of conspiracy theories during the pandemic, regardless of country, potentially due to the global nature of information spread and the common uncertainties and fears experienced during the COVID-19 crisis.
+
+
+***Comparative Analysis of Corona Personal Behavior***
+
+
+```{r}
+# Combine the datasets for comparative analysis
+combined_data <- bind_rows(
+  mutate(cvbase_hungary, Group = "Hungary"),
+  mutate(cvbase_others, Group = "Others")
+)
+
+# Pivot the combined dataset to longer format for plotting
+long_data <- pivot_longer(
+  combined_data, 
+  cols = starts_with("c19perBeh"), 
+  names_to = "Behavior", 
+  values_to = "Response"
+)
+
+# Generate the boxplot
+ggplot(long_data, aes(x = Behavior, y = Response, fill = Group)) +
+  geom_boxplot() +
+  labs(title = "Comparative Analysis of Corona Personal Behavior",
+       x = "Type of Behavior", 
+       y = "Response Level") +
+  theme_minimal()
+```
+The boxplot titled "Comparative Analysis of Corona Personal Behavior" compares responses regarding personal behaviors to minimize the risk of COVID-19 between two groups: individuals from Hungary and individuals from other countries.
+
+The behaviors analyzed are:
+
+**c19perBeh01**: Likely relates to the frequency of hand washing.
+**c19perBeh02**: Likely indicates the tendency to avoid crowded spaces.
+**c19perBeh03**: Likely measures the inclination to self-quarantine.
+
+From the boxplots, it can be observed that:
+
+The median levels of reported behaviors are fairly similar between the two groups across all behaviors, indicated by the line within each box.
+The range and interquartile range (height of the boxes) appear similar between the two groups, suggesting similar levels of agreement or engagement in these behaviors.
+However, there are some outliers, especially in behaviors c19perBeh01 and c19perBeh02, which suggest there are individuals who significantly deviate from the common trends in either direction.The consistency between the two groups across all three behaviors suggests that the public's response to health guidelines in Hungary is comparable to that of the other group. The similarity in pro-social health behaviors can imply similar public perceptions of the virus's threat or parallel public health policies and their effectiveness. It also may reflect universal human reactions to a global health crisis, where common practices are adopted by diverse populations.
+Overall, the boxplot suggests that there are no significant differences in the reported personal behaviors between individuals from Hungary and those from other countries, as per the data in the survey. The similar median responses and variation imply that attitudes towards these personal protective behaviors during the COVID-19 pandemic were relatively consistent regardless of whether the respondents were from Hungary or from other countries.
+
+**Comparative Analysis of Pro-Social Behavior**
+
+```{r}
+
+# Combine the data into a single dataframe for plotting
+combined_data <- bind_rows(
+  mutate(cvbase_hungary, Group = "Hungary"),
+  mutate(cvbase_others, Group = "Others")
+)
+
+# Pivot to long format for ggplot
+long_data <- combined_data %>%
+  pivot_longer(cols = starts_with("c19ProSo"), names_to = "ProSocialBehavior", values_to = "Response")
+
+# Generate boxplot
+ggplot(long_data, aes(x = ProSocialBehavior, y = Response, fill = Group)) +
+  geom_boxplot() +
+  labs(title = "Comparative Analysis of Pro-Social Behavior", x = "Type of Pro-Social Behavior", y = "Response Level") +
+  theme_minimal()
+```
+
+The output is a boxplot displaying a comparative analysis of pro-social behaviors related to COVID-19 between Hungary and other countries. The boxplot shows four different types of pro-social behaviors:
+
+**c19ProSo01**: Willingness to help others who suffer from coronavirus.
+**c19ProSo02**: Willingness to make donations to help those suffering from coronavirus.
+**c19ProSo03**: Willingness to protect vulnerable groups from coronavirus even at one's own expense.
+**c19ProSo04**: Willingness to make personal sacrifices to prevent the spread of coronavirus.
+
+The responses for Hungary and other countries are quite similar across all three types of pro-social behaviors other than c19ProSo02 as lower median for Hungary indicates a generally lower willingness to make such donations compared to the other countries.
+Overall, this boxplot suggests that there might not be significant differences between the pro-social responses of individuals in Hungary compared to those in other countries, although there is a variation in responses within each group. The similarity in responses could indicate a general consensus or common attitude towards pro-social behaviors during the COVID-19 pandemic across different countries.
+
+**Comparative Analysis of Corona Radical Actions**
+
+```{r}
+
+
+# Combine the datasets and melt them for plotting
+cvbase_combined <- bind_rows(
+  mutate(cvbase_hungary, Group = "Hungary"),
+  mutate(cvbase_others, Group = "Others")
+)
+
+cvbase_melted <- cvbase_combined %>%
+  pivot_longer(cols = c19RCA01:c19RCA03, names_to = "Action", values_to = "Response")
+
+# Now plot the data using ggplot
+ggplot(cvbase_melted, aes(x = Action, y = Response, fill = Group)) +
+  geom_boxplot() +
+  labs(
+    title = "Comparative Analysis of Corona Radical Actions",
+    x = "Type of Action",
+    y = "Response Level",
+    fill = "Group"
+  ) +
+  theme_minimal()
+```
+The output is a boxplot comparing responses regarding Corona Radical Actions between Hungary and other countries. There are three types of actions depicted:
+
+**c19RCA01**: Likely a measure of willingness to support mandatory vaccination.
+**c19RCA02**: Possibly related to supporting mandatory quarantine measures.
+**c19RCA03**: Likely indicating support for reporting suspected cases of coronavirus.
+
+For c19RCA01 and c19RCA02, the median response level appears to be about the same for both Hungary and other countries, indicating a similar level of support or agreement with these measures. However, for c19RCA03, the median response level for Hungary is noticeably lower than for the other countries, suggesting less support for reporting suspected cases of coronavirus among the Hungarian participants compared to participants from other countries.
+
+The spread of the responses (interquartile range) and the presence of outliers indicate variability within the responses from both groups. Overall, the boxplot suggests that while there are some differences in attitudes toward specific radical actions (especially regarding reporting suspected cases), the general tendencies may be relatively aligned between Hungary and the rest of the sample.
+
+
+
+
+
+
+**(b) How well do participant responses (attributes) predict pro-social attitudes (c19ProSo01,2,3 and 4) for your focus country? Which attributes seem to be the best predictors? Explain your reasoning.**
+
+To determine how well participant responses (attributes) predict pro-social attitudes (c19ProSo01, c19ProSo02, c19ProSo03, and c19ProSo04) for my focus country Hungary, we would typically perform a statistical analysis using the relevant data. The process usually involves running a multiple regression analysis where the pro-social attitudes are the dependent variables, and the participant responses are the independent variables.
+
+To find out which attributes are the best predictors, we would look at the results of the regression analysis, focusing on:
+
+Coefficients: Higher absolute values indicate a stronger effect on the pro-social attitudes.
+P-values: A lower p-value (typically < 0.05) suggests that the attribute significantly predicts the pro-social attitude.
+R-squared value: This indicates the proportion of the variance for the dependent variable that's explained by the independent variables.
+For example, if we have attributes such as age, gender, education, and various beliefs about COVID-19, we would include these as independent variables in our regression model. We'd then analyze which of these has significant coefficients and low p-values in relation to the pro-social attitude scores.
+
+
+
+When preparing the dataset for analysis, using select_if(is.numeric) would only select numeric variables and exclude factor variables (categorical variables). If we have categorical variables that are important predictors, we would miss out on including them in your model, which could lead to an incomplete analysis.
+We will be running colSums(is.na(cvbase_hungary)) to calculate the count of NA (missing) values in each column of the data frame cvbase_hungary. This is a crucial step in data preparation, especially before conducting a linear regression analysis, because missing values can affect the results and interpretation of the model.By identifying columns with too many missing values, we ensure that we're not including variables that could introduce bias or reduce the statistical power of our regression model. 
+
+```{r}
+cvbase_hungary <- cvbase %>%
+  filter(coded_country == "Hungary") 
+
+colSums(is.na(cvbase_hungary))
+```
+The variables isoFriends_inPerson,isoOthPpl_inPerson,coronaClose_1,coronaClose_2,coronaClose_3,coronaClose_4 and coronaClose_5 have a significant number of missing values, which is substantial given the total number of observations the dataset. It's likely we would ignore these variables for the analysis.
+
+
+**Predict c19ProSo01:"I am willing to help others who suffer from coronavirus."(FOCUS COUNTRY)**
+
+
+```{r}
+
+# Fit a linear model with all predictors
+model_c19ProSo01 <- lm(c19ProSo01 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +   isoOthPpl_online+lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + coronaClose_6 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_hungary)
+# Get the summary of the model
+model_c19ProSo01_summary <- summary(model_c19ProSo01)
+
+model_c19ProSo01_summary 
+```
+This model aims to predict a pro-social attitude, specifically the willingness to help others who suffer from coronavirus (c19ProSo01), based on various attributes. Here's an explanation of the output:
+
+Coefficients: The regression coefficients indicate the expected change in the dependent variable (c19ProSo01) for a one-unit change in the predictor variable, assuming all other variables are held constant. For instance, employstatus_4 has a positive coefficient (1.89114), indicating that those not employed, looking for work have a higher willingness to help others compared to the baseline group of employment status.
+
+Significance: Variables such as employstatus_2, employstatus_4, isoOthPpl_online.L, c19ProSo02, c19ProSo03, and age are significant predictors (p-value < 0.05), indicating that these factors have a statistically significant impact on the willingness to help others who suffer from coronavirus.
+
+Model Fit:
+The Multiple R-squared value of 0.6929 indicates that approximately 69.29% of the variance in the response variable can be explained by the model. This is relatively high and suggests a good fit.However, the Adjusted R-squared value is much lower at 0.4667. This value adjusts the R-squared based on the number of predictors and the number of observations, to account for the potential of overfitting. The considerable difference between the Multiple R-squared and the Adjusted R-squared suggests that there might be some predictors in the model that do not contribute much to the explanation of the variability in the response and are inflating the R-squared value.The F-statistic and its p-value test the null hypothesis that all regression coefficients are equal to zero against the alternative that at least one is not. The very low p-value (2.409e-07) suggests that the model is statistically significant and that we can reject the null hypothesis that the model's predictors, as a group, have no linear relationship with the response variable.
+
+
+**The best predictors for c19ProSo01:"I am willing to help others who suffer from coronavirus."(FOCUS COUNTRY)**
+
+```{r}
+
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo01_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo01_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo01_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo01_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo01_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+The top predictors for c19ProSo01, a variable representing pro-social behavior, highlight a complex interplay of employment status, age, online social connectivity, and personal values within the sample population. Individuals who are willing to protect vulnerable groups (c19ProSo03) are the most likely to engage in pro-social behavior, indicating a broad propensity for altruism. Conversely, younger individuals tend to participate more in such behaviors, potentially due to greater digital engagement or fewer life constraints. Interestingly, employment status plays a dual role; those unemployed and actively seeking work (employstatus_4) show a positive inclination towards pro-social activities, possibly due to empathy or available time, whereas full-time workers (employstatus_2) also demonstrate a significant, albeit lesser, pro-social tendency, suggesting that even those with moderate work commitments find ways to contribute.
+
+Personal behaviors focused on self-protection against coronavirus (c19perBeh01) exhibit a negative correlation with pro-social behavior, hinting at a prioritization of personal safety over outward-focused actions. In contrast, online social contact with others (isoOthPpl_online.L) is positively linked to pro-social behavior, reflecting the mobilizing power of online communities. However, not all online interactions are equally conducive; some types (isoOthPpl_online^6) show a negative correlation, suggesting that the quality of online interactions matters. Boredom (bor03) emerges as a detractor from pro-social behavior, indicating that those who are less engaged in personal activities may lack the motivation to act socially. Finally, a strong sense of life purpose (MLQ) is positively associated with pro-social behavior, affirming the psychological understanding that a meaningful life often includes helping others.
+
+The p-values for these predictors are all below the common alpha level of 0.05, indicating that they are statistically significant predictors of the target behavior within this model. The t-values provide the direction and strength of the relationships, with higher absolute t-values indicating stronger relationships.
+The presence of singularities suggests that there is multicollinearity or that some categories do not have any observations. Additionally, some variables are not defined due to singularities, indicating that some predictors might be redundant or perfectly correlated with others. It's also important to note that a high number of predictors relative to the number of observations can lead to overfitting, where the model may not generalize well to new data. This could explain why the adjusted R-squared is much lower than the multiple R-squared. The difference suggests that some predictors might not be adding informative value to the model.
+
+
+
+**Predict c19ProSo02:"I am willing to make donations to help others that suffer from coronavirus."(FOCUS COUNTRY)**
+```{r}
+# Model for c19ProSo02
+# Fit a linear model with all predictors
+model_c19ProSo02 <- lm(c19ProSo02 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +   isoOthPpl_online+lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + coronaClose_6 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_hungary)
+# Get the summary of the model
+model_c19ProSo02_summary <- summary(model_c19ProSo02)
+
+model_c19ProSo02_summary 
+```
+
+This model aims to predict a pro-social attitude, specifically the willing to make donations to help others that suffer from coronavirus (c19ProSo02), based on various attributes. Here's an explanation of the output:
+
+The coefficients table indicates the effect of each predictor on the response variable c19ProSo02. For example, employstatus_3 has a significant negative coefficient, which implies that being employed working 40 or more hours per week is associated with a decrease in the likelihood of c19ProSo02 behavior.
+
+Significant predictors such as isoFriends_online.L have a positive relationship with c19ProSo02, suggesting that more online social contact with friends is associated with an increase in the likelihood of the target pro-social behavior.
+
+The Residual Standard Error (RSE) is relatively high, suggesting that there is still a considerable amount of variability in the response data that is not explained by the model.
+The Multiple R-squared value is fairly high, which would usually indicate a model that explains a good portion of the variance in the response variable, but this might be inflated due to the incorrect model specification.
+The Adjusted R-squared is lower, indicating that when the number of predictors is taken into account, the model is less efficient at predicting the response.
+The F-statistic is significant (p < 0.0001), suggesting that the model, overall, is statistically significant, meaning it is likely to be useful for making predictions about c19ProSo02 compared to a model without these predictors. However, this significance could be misleading if the model contains the response variable as a predictor.
+
+
+**The best predictors of c19ProSo02:"I am willing to make donations to help others that suffer from coronavirus."(FOCUS COUNTRY)**
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo02_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo02_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo02_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo02_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo02_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+
+The statistical analysis for the predictors of c19ProSo02, which gauges the willingness to make donations to help others affected by coronavirus, presents an interesting mix of personal, social, and behavioral factors. For instance, isoFriends_online.L, showing a significant positive estimate, implies that individuals who have had more linear online contact with friends or relatives outside their household in the past week are more likely to make donations. This could suggest that digital interactions may encourage or inform individuals about the needs arising from the crisis and possible ways to contribute.
+
+Conversely, variables like rankOrdLife_3B and rankOrdLife_3E, associated with the rank ordering of life aspects such as Achievement and Love, exhibit strong negative relationships with the willingness to donate. This might indicate that individuals who place less importance on certain personal or competitive successes or emotional connections during the pandemic are potentially more focused on the collective wellbeing and thus more inclined to donate.
+
+Moreover, c19ProSo01 and c19ProSo03 have positive estimates, suggesting a consistent pattern where individuals already willing to help others suffering from coronavirus or willing to protect vulnerable groups are also more likely to make financial contributions. In contrast, c19ProSo04 displays a negative relationship, hinting at a nuanced difference in the type of pro-social behavior; those who are willing to make personal sacrifices may not necessarily align with financial donation behaviors.The level of education, denoted by edu, shows a positive correlation, echoing the idea that more educated individuals may be more aware or capable of contributing to aid efforts. Additionally, rankOrdLife_3D reflects a negative relationship, perhaps pointing out that individuals prioritizing Friendship less might be directing their social commitment elsewhere, such as donations.
+
+Lastly, employment status, particularly employmentstatus_3, reveals a negative estimate, indicating that those employed full-time may have a lower likelihood of donating. The full-time work commitments could limit the capacity or focus on additional pro-social activities like making donations.
+
+
+
+**Predict c19ProSo03:"I am willing to protect vulnerable groups from coronavirus even at my own expense."(FOCUS COUNTRY)**
+
+
+```{r}
+# Model for c19ProSo03
+# Fit a linear model with all predictors
+model_c19ProSo03 <- lm(c19ProSo03 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +   isoOthPpl_online+lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + coronaClose_6 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_hungary)
+# Get the summary of the model
+model_c19ProSo03_summary <- summary(model_c19ProSo03)
+
+model_c19ProSo03_summary 
+```
+This linear regression model output aims to predict c19ProSo03, likely a measure related to prosocial behavior during the COVID-19 pandemic. The results offer insights into which variables are significant predictors and the strength of the model.
+The Residual standard error (RSE) of 1.166 indicates the average amount by which the actual values deviate from the predicted values. A lower RSE reflects a tighter fit of the model to the data. With 95 degrees of freedom, this RSE suggests a certain level of prediction error within the model.
+106 observations were deleted due to missingness, which means these records had incomplete data and were not included in the model. This can affect the power and generalizability of the model.
+The Multiple R-squared value of 0.7032 explains the proportion of variance in the dependent variable accounted for by the independent variables. In this case, approximately 70% of the variability in c19ProSo03 can be explained by the model, which is considered high for social science data and indicates a good fit.
+However, the Adjusted R-squared value of 0.4845 is significantly lower than the Multiple R-squared, which is expected as it adjusts for the number of predictors in the model. This still suggests a moderate to good fit but also indicates that some of the predictors may not be contributing significantly to the model.
+The F-statistic of 3.215 with a p-value of 7.753e-08 tests the null hypothesis that all regression coefficients are equal to zero, meaning no linear relationship exists between the independent and dependent variables. Since the p-value is well below a standard alpha level of 0.05, we reject the null hypothesis, indicating that the model has found significant linear relationships.
+In summary, the model is statistically significant and explains a substantial amount of variability in the prosocial behavior variable c19ProSo03. However, the fact that a considerable number of observations were omitted due to missing data could limit the model's accuracy and representativeness. Also, the adjusted R-squared suggests that not all predictors are equally useful in explaining the variation in c19ProSo03, prompting further refinement of the model for better accuracy.
+
+
+**The best predictors of c19ProSo03:"I am willing to protect vulnerable groups from coronavirus even at my own expense."(FOCUS COUNTRY)**
+
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo03_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo03_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo03_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo03_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo03_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+In analyzing the predictors for the variable c19ProSo03, which seems to measure willingness to protect vulnerable groups from coronavirus, we can observe a mix of online social behaviors, personal attitudes towards the pandemic, employment status, and one’s sense of life purpose as significant factors.
+The negative estimate for isoOthPpl_online.L indicates that increased general online social contact is associated with a lower likelihood of engaging in behaviors that protect vulnerable groups, possibly suggesting that those with broader social interactions may be less focused on targeted prosocial actions.
+Conversely, the positive estimates for c19ProSo01 and c19ProSo04 show that individuals who are more willing to help those suffering from coronavirus and to make personal sacrifices to prevent its spread are also likely to take actions to protect vulnerable groups. This overlap suggests a coherent pattern of prosocial behavior concerning pandemic response.
+The positive estimate for c19RCA02 indicates that those who support mandatory quarantine measures are also likely to be proactive in protecting vulnerable populations, reflecting a consistency in attitudes favoring stringent health measures.
+
+Interestingly, isoFriends_online^6, which likely measures a specific aspect of online interaction with friends, has a significant positive relationship with c19ProSo03, hinting at the nuanced role that different types of online interactions have in promoting prosocial pandemic behaviors.Moreover, MLQ's positive estimate emphasizes that individuals with a clearer sense of purpose in life tend to engage more in prosocial behaviors related to COVID-19, aligning with the broader literature on the role of meaning in life in promoting altruistic behavior.On the employment front, employmentstatus_2’s negative estimate suggests that those working 24-39 hours per week are less likely to engage in the protective behaviors measured by c19ProSo03, possibly because of time constraints or differing priorities.
+
+Lastly, the negative estimate for c19RCA03 suggests a complex relationship where those who are less inclined to report people suspected of having coronavirus are also less likely to engage in protecting vulnerable groups, which might reflect varying attitudes toward personal privacy and public health interventions.
+
+In conclusion, the top predictors for c19ProSo03 indicate that prosocial behavior during the pandemic is influenced by an interplay of social connectivity, personal attitudes toward pandemic measures, employment status, and one’s sense of meaning in life. These findings underscore the multifaceted nature of prosocial behavior in the context of a global health crisis.
+
+**Predict c19ProSo04:"I am willing to make personal sacrifices to prevent the spread of coronavirus."(FOCUS COUNTRY)**
+
+```{r}
+# Model for c19ProSo04
+# Fit a linear model with all predictors
+model_c19ProSo04 <- lm(c19ProSo04 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +   isoOthPpl_online+lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + coronaClose_6 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_hungary)
+# Get the summary of the model
+model_c19ProSo04_summary <- summary(model_c19ProSo04)
+
+model_c19ProSo04_summary 
+```
+This linear regression model output aims to predict c19ProSo04, likely a measure related to prosocial behavior during the COVID-19 pandemic. The results offer insights into which variables are significant predictors and the strength of the model.
+The model's Residual Standard Error (RSE) of 1.346 on 95 degrees of freedom indicates a moderate average discrepancy between the predicted and actual values. The Multiple R-squared value is moderately high at 0.5482, suggesting that about 54.82% of the variance in the response variable is accounted for by the model. However, the Adjusted R-squared drops to 0.2153, a substantial decrease, which could signal overfitting; this value adjusts the R-squared for the number of predictors, indicating that not all predictors are contributing useful information.
+
+The F-statistic of 1.647, with a p-value of 0.01189, shows that the model is statistically significant overall, but the relatively low value hints at a weak joint effect of the predictors. Significance codes in the output (stars next to the coefficients) indicate the level of significance for each predictor. For instance, c19ProSo03, indicated by three stars, is highly significant and a strong predictor, whereas predictors like employstatus_9, despite its p-value not reaching conventional levels of significance, could still have a practical impact on the response variable given the context of the study.
+
+In essence, the model captures a portion of the variance in the dependent variable, but there may be too many predictors, some of which might not contribute meaningfully to the model's predictive power. Therefore, while the model suggests certain trends and relationships, such as the positive impact of c19ProSo03 on the response variable, there is room for refinement to improve the model's effectiveness and to avoid the risk of overfitting, as indicated by the disparity between R-squared and Adjusted R-squared values.
+
+**The best predictors of c19ProSo04:"I am willing to make personal sacrifices to prevent the spread of coronavirus."(FOCUS COUNTRY)**
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo04_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo04_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo04_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo04_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo04_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+
+The top predictors for the variable c19ProSo04, which seems to relate to the willingness to make personal sacrifices to prevent the spread of coronavirus, present an intriguing mix of socio-behavioral factors. Starting with the most influential, c19ProSo03, with a positive estimate, indicates a strong predictor, suggesting a close association between the willingness to protect vulnerable groups and making personal sacrifices.
+
+Conversely, the ranking of life values such as Victory (rankOrdLife_2B), Love (rankOrdLife_2E), and Empathy (rankOrdLife_2F), which all have negative estimates, might indicate that those who place less importance on these aspects are either more or less inclined to make personal sacrifices, depending on the context of the negative coefficients. The positive estimate for rankOrdLife_5F could imply that other values, potentially coded as 'F', are associated with a greater willingness to make personal sacrifices.Interestingly, the negative coefficient for c19ProSo02 suggests that those willing to make donations may not necessarily correlate with the willingness to make personal sacrifices. This divergence could imply different motivational factors behind financial aid versus personal action.
+
+Furthermore, the role of students (employstatus_9) and their proclivity towards making sacrifices is indicated by a negative estimate, which might suggest that students are less likely to make personal sacrifices, possibly due to constraints like time or resources.
+
+The presence of c19perBeh03 in the model, with a positive estimate, hints at a relationship between personal quarantine behaviors and a broader attitude towards sacrifice for the public good.It's intriguing to see how values and personal behaviors align with a commitment to making sacrifices, painting a complex picture of human pro-social behavior.
+
+
+(c) Repeat Question 2(b) for the other countries as a group. Which attributes are the strongest predictors? How do these attributes compare to those of your focus country?
+
+
+```{r}
+cvbase_others <- cvbase %>%
+  filter(coded_country != "Hungary")
+
+colSums(is.na(cvbase_others))
+```
+The variables isoFriends_inPerson,isoOthPpl_inPerson,isoOthPpl_inPerson ,coronaClose_1,coronaClose_2,coronaClose_3,coronaClose_4, coronaClose_5 and coronaClose_6 have a significant number of missing values, which is substantial given the total number of observations the dataset. It's likely we would ignore these variables for the analysis.
+
+
+**Predict c19ProSo01:"I am willing to help others who suffer from coronavirus."(OTHER COUNTRIES)**
+
+```{r}
+# Fit a linear model with all predictors
+model_c19ProSo01 <- lm(c19ProSo01 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_others)
+# Get the summary of the model
+model_c19ProSo01_summary <- summary(model_c19ProSo01)
+
+model_c19ProSo01_summary
+
+```
+In the context of predicting pro-social behavior (c19ProSo01), the linear model shows a moderate explanatory power, accounting for approximately 33.97% of the variability in the dependent variable as indicated by the Multiple R-squared value.
+
+Multiple R-squared: At 0.3397, this value indicates that around 33.97% of the variability in the pro-social behavior c19ProSo01 is explained by all the predictor variables together. This is a moderate amount and means that the model has a fair explanatory power, though there is still a substantial amount of variability left unexplained.
+
+Adjusted R-squared: The adjusted R-squared value is very close to the multiple R-squared, at 0.3382. This minor decrease upon adjustment suggests that most of the predictors contribute to the model and that the model isn't overly penalized for the number of predictors it includes.
+
+F-statistic: The F-statistic is large (230.9), and the associated p-value is extremely small (p < 2.2e-16), indicating that the model as a whole has a statistically significant fit. In other words, we reject the null hypothesis that none of the predictors are related to the dependent variable.
+
+The statistics provided suggest that the model has a reasonable fit to the data, identifying some relationships between the predictors and the dependent variable. However, the R-squared values indicate that there are other factors not included in the model that also affect the pro-social behavior c19ProSo01.
+
+
+**The best predictors of c19ProSo01:"I am willing to help others who suffer from coronavirus."(OTHER COUNTRIES)**
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo01_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo01_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo01_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo01_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo01_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+
+When comparing the predictors for c19ProSo01  between Hungary and other countries, it's evident that there are both unique and common predictors.
+The shared top predictor for both Hungary and the other countries is c19ProSo03, indicating a willingness to protect vulnerable groups from coronavirus, even at one's own expense. This similarity suggests that regardless of cultural or national context, the attitude towards safeguarding those most at risk is a universal driver of pro-social behavior in response to the pandemic.For other countries, the willingness to make personal sacrifices to prevent the spread of coronavirus (c19ProSo04) is a significant predictor, with a strong positive relationship. The importance given to Empathy (rankOrdLife_1F) is also a strong predictor, reflecting a negative association—meaning those who rate empathy as less important might be less willing to engage in pro-social behavior. 
+The belief that one's life has a clear sense of purpose (MLQ) shows up as a positive predictor in both models, although it seems to have a stronger effect in the model for other countries. This could suggest that across different cultures, having a sense of purpose may drive pro-social behavior.
+In contrast, not being employed, looking for work (employstatus_4) is a significant positive predictor in Hungary, but not in other countries. This might be because, in Hungary, being involved in the community could help with finding a job, or perhaps there's strong community support for the unemployed there. In other countries, these factors might not be as influential, possibly because being unemployed leaves people with less time or fewer resources to help others. It really shows how local culture and the economy can influence how people act, especially during tough times like a pandemic.
+
+Conversely, knowing someone with coronavirus (c19perBeh03) has a negative relationship with pro-social attitudes in the other countries model, indicating that personal exposure to the virus may impact one's willingness to act in a pro-social manner. This variable does not appear as a top predictor in the hungary model , which could imply different personal response mechanisms to the virus in Hungary compared to other places.
+
+Interestingly, age has a negative effect on pro-social attitudes in Hungary, which is not a top predictor in the model for other countries. It might suggest that younger individuals in Hungary are more inclined towards pro-social behavior regarding COVID-19 than older ones.
+
+In summary, while there are commonalities like a sense of life purpose influencing pro-social behavior across countries, distinct cultural and societal factors in Hungary appear to uniquely shape the predictors of pro-social attitudes towards COVID-19.
+
+**Predict c19ProSo02:"I am willing to make donations to help others that suffer from coronavirus."(OTHER COUNTRIES)**
+
+```{r}
+# Fit a linear model with all predictors
+model_c19ProSo02 <- lm(c19ProSo02 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_others)
+# Get the summary of the model
+model_c19ProSo02_summary <- summary(model_c19ProSo02)
+
+model_c19ProSo02_summary
+```
+The linear regression model designed to predict the willingness to donate for coronavirus relief (c19ProSo02) from various socioeconomic and attitudinal variables demonstrates a moderate fit, explaining approximately 36.51% of the variability in donation willingness. The adjusted R-squared value, which compensates for the number of predictors, is slightly lower at 36.37%, indicating that not all predictors are equally useful in explaining the response. An average deviation of 1.289 from the predicted values, as indicated by the residual standard error, suggests some level of inaccuracy in the predictions. This could be improved if the missing data, which led to over 8,000 observations being excluded, were available. Statistically, the model is significant as reflected by the F-statistic (258.1) and its associated p-value (less than 2.2e-16), strongly suggesting that the model's predictors do have a significant association with the willingness to donate. Despite its statistical significance, the model leaves a substantial amount of variability unexplained, hinting at the possibility of other influential factors not captured by the current predictors.
+
+
+**The best predictors of c19ProSo02:"I am willing to make donations to help others that suffer from coronavirus."(OTHER COUNTRIES)**
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo02_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo02_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo02_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo02_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo02_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+
+When comparing the top predictors for the pro-social behavior of willingness to donate to help others with coronavirus (c19ProSo02) between Hungary and other countries, some contrasts and similarities emerge.
+
+For other countries, the strongest predictor is the willingness to protect vulnerable groups from coronavirus (c19ProSo03), which indicates that those who are inclined to protect are also likely to donate. The willingness to help others who suffer from coronavirus (c19ProSo01) is another strong predictor, suggesting a general trend of pro-social behavior across different forms of aid. Perceptions of personal control over life (MLQ) and education (edu) are also among the top predictors, while not being employed looking for work(employstatus_4) negatively predicts donation willingness.
+
+In Hungary, social contact with friends online (isoFriends_online.L and Q) are notable predictors, implying that those with more virtual social interaction are more inclined to donate. 
+
+Both contexts share the importance of pro-social attitudes towards helping and protecting others (c19ProSo01 and c19ProSo03) as top predictors. However, the negative predictors differ; in other countries, not being employed looking for work (employstatus_4) is a negative predictor, while in Hungary, being employed for more than 40 hours per week (employstatus_3) shows a similar effect. This might reflect cultural or economic differences in the impact of employment on the capacity or inclination to donate. In summary, while there are shared attributes in pro-social behavior between Hungary and other countries, the influence of employment status and the role of social interaction display notable differences.
+
+
+**Predict c19ProSo03:"I am willing to protect vulnerable groups from coronavirus even at my own expense."(OTHER COUNTRIES)**
+```{r}
+# Fit a linear model with all predictors
+model_c19ProSo03 <- lm(c19ProSo03 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_others)
+# Get the summary of the model
+model_c19ProSo03_summary <- summary(model_c19ProSo03)
+
+model_c19ProSo03_summary
+```
+The regression model for c19ProSo03, which evaluates the willingness to protect vulnerable groups from coronavirus in countries other than Hungary, demonstrates an effective fit with a residual standard error of 1.243 on 31,417 degrees of freedom. This error magnitude indicates that on average, the predictions are about 1.243 units away from the actual data points on the scale used for measuring c19ProSo03, which suggests a decent accuracy in the model's predictions. The Multiple R-squared value of 0.4368 indicates that approximately 44% of the variance in individuals' willingness to protect vulnerable groups is explained by the predictors in the model. This substantial explanation rate, coupled with the Adjusted R-squared close to the R-squared, points to a robust model with little overfitting.
+
+The F-statistic of 348.1 on 70 and 31,417 degrees of freedom, with a p-value significantly less than 0.0001, strongly rejects the null hypothesis that none of the predictors have an effect. This implies that the model's predictors significantly influence the response variable. However, the fact that about 56% of the variance remains unexplained suggests that there are additional factors, potentially unique to each country or unmeasured variables, that influence the willingness to protect vulnerable groups. 
+
+
+**The best predictors of c19ProSo03:"I am willing to protect vulnerable groups from coronavirus even at my own expense."(OTHER COUNTRIES)**
+
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo03_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo03_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo03_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo03_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo03_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+For the other countries, the strongest predictors of pro-social behavior (c19ProSo03), which involves willingness to protect vulnerable groups from coronavirus, display a significant influence from other pro-social behaviors (c19ProSo01 and c19ProSo02), reflecting a consistent trend where one type of pro-social behavior strongly predicts another. This suggests a general disposition towards altruism among the participants. Key personal and societal attitudes also emerge as significant predictors, including age, feelings of exclusion (lone03), life satisfaction (lifeSat), and views on political transparency (consp02), each contributing to the model's predictive power.
+
+In contrast, in Hungary, the strongest predictors of c19ProSo03 include factors like online interactions with people in general (isoOthPpl_online.L) and specific online interactions with friends (isoFriends_online^6), which were more pronounced compared to the other countries. These findings may indicate a more significant role of digital social connectivity in influencing pro-social behaviors in Hungary compared to other nations. Additionally, Hungary shows a unique negative predictor in employment status (being employed for 24-39 hours per week negatively influences pro-social behavior), which is not a significant factor in other countries.
+
+The notable difference is the impact of digital interactions in Hungary, suggesting a context where online social engagement is crucial for fostering pro-social attitudes towards COVID-19. Meanwhile, in other countries, broader pro-social tendencies and personal well-being metrics are more influential. This comparative analysis highlights how cultural and social contexts might influence the drivers of pro-social behaviors during a global crisis.
+
+**Predict c19ProSo04:"I am willing to make personal sacrifices to prevent the spread of coronavirus."(OTHER COUNTRIES)**
+```{r}
+# Fit a linear model with all predictors
+model_c19ProSo04 <- lm(c19ProSo04 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data = cvbase_others)
+# Get the summary of the model
+model_c19ProSo04_summary <- summary(model_c19ProSo04)
+
+model_c19ProSo04_summary
+```
+The statistical analysis for the model predicting individuals' willingness to make personal sacrifices to prevent the spread of coronavirus (c19ProSo04) across various countries reveals some critical insights. The model's residual standard error of 1.263 on 31,417 degrees of freedom indicates a relatively close fit of the model predictions to the observed data, with a typical prediction error of about 1.263 points on the scale used for c19ProSo04. The Multiple R-squared value of 0.3099 suggests that about 31% of the variance in the response variable is explained by the included predictors, which, although significant, also highlights that a substantial portion of the variance (approximately 69%) is left unexplained by the model. This indicates the presence of other influential factors not captured in this model, possibly socio-cultural or economic factors that vary across countries. The F-statistic of 201.5 with a p-value less than 2.2e-16 robustly rejects the null hypothesis, affirming that the predictors do have a significant effect on the willingness to make personal sacrifices. However, the moderate R-squared value coupled with a significant portion of unexplained variance suggests that while the model is statistically significant, it may benefit from including additional predictors or considering localized variations to enhance its explanatory power further.
+
+
+**The best predictors of c19ProSo04:"I am willing to make personal sacrifices to prevent the spread of coronavirus."(OTHER COUNTRIES)**
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo04_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo04_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo04_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo04_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo04_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+
+For the pro-social behavior c19ProSo04, which is about willingness to make personal sacrifices to prevent the spread of coronavirus, the top predictors across other countries are closely aligned with behaviors directly related to the pandemic, such as c19ProSo03 (protecting vulnerable groups) and various behaviors and attitudes towards minimizing coronavirus risk, like c19perBeh03 (self-quarantine) and c19perBeh02 (avoiding crowded spaces). Psychological and attitudinal factors like consp01, which reflects skepticism towards governmental transparency, also feature prominently. Additionally, demographic factors such as age and deeply held personal values reflected in the life rank orders (especially the high importance given to empathy and love) are significant predictors.
+
+In Hungary, the predictors differ markedly. While the commitment to protect vulnerable groups (c19ProSo03) remains a significant predictor, it is notable that several life rank order values related to achievement, love, and friendship (rankOrdLife_2B, 2E, 2F, 5F) are influential, indicating a more diversified influence of personal values on pro-social behaviors. The negative predictors like employment status (employstatus_9) among students also suggest contextual or cultural differences in how employment status impacts pro-social attitudes towards COVID-19 in Hungary compared to other countries.
+
+This comparative analysis highlights that while some predictors like the direct behaviors towards COVID-19 (c19ProSo03, c19perBeh03) are universally significant, there is a notable divergence in the influence of personal values and demographic factors. In other countries, actions and attitudes directly related to COVID-19 and general skepticism towards authorities are dominant. In contrast, in Hungary, a broader spectrum of life values and more specific demographic factors play a significant role, illustrating how cultural and societal norms can shape the predictors of pro-social behavior in distinct environments.
+
+
+
+
+
+*3. Focus country vs cluster of similar countries.*
+
+
+**Collecting indicators from other external sources**
+When selecting indicators to cluster countries and identify those similar to the focus country, the choice of variables should capture different aspects that are meaningful to the context of the analysis. Here's a rationale for each chosen indicator:
+
+**GDP**: GDP per capita serves as a broad measure of a country’s economic activity and affords insights into the overall wealth and standard of living. Higher GDP often correlates with more resources for public health, education, and other services that can enhance pro-social behavior, such as the willingness to engage in community-oriented actions during a pandemic.
+
+**Unemployment Rate**: This reflects economic stability and impacts citizens' capacity to engage in pro-social behaviors. Higher unemployment might lead to greater economic strain, potentially affecting individuals’ ability to donate or help others. It can also influence the government's ability to respond to the pandemic.
+
+**Government Effectiveness Estimate**: The efficiency and effectiveness of government can greatly impact public policy and the success of public health initiatives. It plays a critical role in managing the pandemic response, including the promotion and enforcement of pro-social behavior.
+
+**Literacy Level**: Literacy is fundamental for understanding and complying with health guidelines. Higher literacy rates can lead to better understanding and adherence to pro-social measures such as hygiene protocols and social distancing.
+
+**Urban Population**: Urban areas tend to be denser and have higher transmission rates for diseases. Pro-social behaviors such as social distancing and lockdown compliance can be more challenging yet more critical in these settings.
+
+**Rural Population**: In contrast, rural areas might face different challenges, such as access to healthcare and information. Understanding the rural proportion can shed light on potential barriers to pro-social behavior related to health services accessibility and dissemination of information.
+
+To cluster similar countries to Hungary, you could use the k-means clustering algorithm on standardized values of these selected indicators. This method will group countries that have similar profiles in terms of the selected socio-economic and political characteristics. For instance, countries clustered with Hungary based on these indicators may similarly predict pro-social attitudes towards COVID-19 due to shared socio-economic conditions, governance quality, and demographic structures.
+
+The reasoning behind the selection of these indicators is based on the premise that economic factors (like unemployment rate,GDP), governance (government effectiveness), educational outcomes (literacy level), and demographic characteristics (urban vs. rural population) can provide a multifaceted view of how a society functions and responds to crises, which is essential for analyzing pro-social behavior during the COVID-19 pandemic.
+
+
+The code below extracts  a collection of social, economic, health, political or other indicators from external sources.
+
+**Extraction of GDP to the external_indicators dataframe**
+
+```{r}
+setwd("/Users/saararamzy/Desktop/external indictors/GDP")
+gdp = read.csv("GDP.csv")
+
+# Rename the column
+colnames(gdp)[colnames(gdp) == "X2019..YR2019."] <- "GDP in dollars"
+
+# Create a new data frame with only 'Country.Name' and '2019 [YR2019]' columns
+external_indicators <- gdp[, c('Country.Name', 'GDP in dollars')]
+#View(external_indicators)
+```
+
+
+
+**Extraction of Unemployment rate to the external_indicators dataframe**
+
+```{r}
+#View(external_indicators)
+setwd("/Users/saararamzy/Desktop/external indictors/unemployment_rate")
+unemployment_rate = read.csv("unemployment_rate.csv")
+
+# Merge the two data frames based on the 'Country.Name' column
+external_indicators <- merge(external_indicators, unemployment_rate[, c("Country.Name", "X2019..YR2019.")], by = "Country.Name", all.x = TRUE)
+
+# Rename the column
+colnames(external_indicators)[colnames(external_indicators) == "X2019..YR2019."] <- "unemployment_rate"
+
+
+#View(external_indicators)
+```
+
+
+**Extraction of government effectivness to the external_indicators dataframe**
+```{r}
+#View(external_indicators)
+setwd("/Users/saararamzy/Desktop/external indictors/government_effectiveness")
+government_effectiveness = read.csv("government_effectiveness.csv")
+#colnames(government_effectiveness)
+
+
+colnames(government_effectiveness)[colnames(government_effectiveness) == "country"] <- "Country.Name"
+# Merge the two data frames based on the 'Country.Name' column
+external_indicators <- merge(external_indicators, government_effectiveness [, c("Country.Name", "latest.value_estimate_government_effec.388")], by ="Country.Name", all.x = TRUE)
+
+# Rename the column
+colnames(external_indicators)[colnames(external_indicators) == "latest.value_estimate_government_effec.388"] <- "government_effectiveness_estimate"
+
+#View(external_indicators)
+
+```
+
+
+**Extraction of literacy level to the external_indicators dataframe**
+
+```{r}
+#View(external_indicators)
+setwd("/Users/saararamzy/Desktop/external indictors/Education_Stats")
+education_stats = read.csv("recent_education_statistics.csv")
+#colnames(education_stats)
+
+colnames(education_stats)[colnames(education_stats) == "country"] <- "Country.Name"
+# Merge the two data frames based on the 'Country.Name' column
+external_indicators <- merge(external_indicators, education_stats[, c("Country.Name", "latest.value_value_adult_literacy_rate.28134")], by ="Country.Name", all.x = TRUE)
+
+# Rename the column
+colnames(external_indicators)[colnames(external_indicators) == "latest.value_value_adult_literacy_rate.28134"] <- "literacy_level"
+
+#View(external_indicators)
+```
+
+
+**Extraction of urban population to the external_indicators dataframe**
+
+```{r}
+
+
+#View(external_indicators)
+setwd("/Users/saararamzy/Desktop/external indictors/urban_population")
+urban_population = read.csv("recent_urban_population.csv")
+#colnames(urban_population)
+
+
+colnames(urban_population)[colnames(urban_population) == "country"] <- "Country.Name"
+# Merge the two data frames based on the 'Country.Name' column
+external_indicators <- merge(external_indicators, urban_population[, c("Country.Name", "latest.value_SP.URB.TOTL.IN.ZS")], by ="Country.Name", all.x = TRUE)
+
+# Rename the column
+colnames(external_indicators)[colnames(external_indicators) == "latest.value_SP.URB.TOTL.IN.ZS"] <- "urban_population"
+
+#View(external_indicators)
+
+```
+
+**Extraction of rural population to the external_indicators dataframe**
+
+```{r}
+#View(external_indicators)
+setwd("/Users/saararamzy/Desktop/external indictors/rural_population")
+rural_population = read.csv("recent_rural_population_percent.csv")
+#colnames(rural_population)
+
+colnames(rural_population)[colnames(rural_population) == "country"] <- "Country.Name"
+# Merge the two data frames based on the 'Country.Name' column
+external_indicators <- merge(external_indicators, rural_population[, c("Country.Name", "latest.value_SP.RUR.TOTL.ZS")], by ="Country.Name", all.x = TRUE)
+
+# Rename the column
+colnames(external_indicators)[colnames(external_indicators) == "latest.value_SP.RUR.TOTL.ZS"] <- "rural_population"
+
+#View(external_indicators)
+
+
+```
+
+
+
+
+**Ensuring the data frame's column classes are correct**
+
+
+```{r}
+# Ensure the data frame's column classes are correct
+external_indicators$`GDP in dollars` <- as.numeric(as.character(external_indicators$`GDP in dollars`))
+external_indicators$government_effectiveness_estimate <- as.numeric(as.character(external_indicators$government_effectiveness_estimate))
+external_indicators$unemployment_rate <- as.numeric(as.character(external_indicators$unemployment_rate))
+external_indicators$literacy_level <- as.numeric(as.character(external_indicators$literacy_level))
+external_indicators$urban_population <- as.numeric(as.character(external_indicators$urban_population))
+external_indicators$rural_population <- as.numeric(as.character(external_indicators$rural_population))
+
+# Check if all went well
+sapply(external_indicators, class)
+
+
+
+```
+**Data preprocessing tasks on the  external_indicators dataframe**
+
+The provided R code snippet is involved in data preprocessing tasks on a dataframe named external_indicators. Initially, it identifies specific columns prone to missing values and replaces any NA (missing value) with the column's median, maintaining existing values otherwise. This imputation helps in preserving data integrity for analysis. After addressing the missing values, the script eliminates any rows that still contain missing values to ensure a completely clean dataset. Furthermore, the script ensures that certain key columns are correctly formatted as numeric data types, which might have been misclassified as character strings initially. This conversion is crucial for subsequent statistical analyses. Finally, the processed dataframe is displayed using the View function, allowing for a visual inspection to ensure all transformations were applied correctly. This sequence of steps ensures that the dataset is both complete and correctly formatted, optimizing it for accurate and efficient analysis.
+
+```{r}
+na_columns <- c("GDP in dollars", "unemployment_rate", "literacy_level", "urban_population", "rural_population")
+external_indicators[na_columns] <- lapply(external_indicators[na_columns], function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x))
+
+# If choosing to remove:
+external_indicators <- na.omit(external_indicators)
+
+
+# Convert necessary columns to numeric, assuming they're read as characters
+numeric_columns <- c("GDP in dollars", "unemployment_rate", "government_effectiveness_estimate", "literacy_level", "urban_population", "rural_population")
+external_indicators[numeric_columns] <- lapply(external_indicators[numeric_columns], function(x) as.numeric(as.character(x)))
+#View(external_indicators)
+```
+
+
+**k-means clustering to identify countries similar to a specific focus country, Hungary**
+
+First we will be employing k-means clustering to identify countries similar to a specific focus country, Hungary, based on a variety of external indicators such as GDP in dollars, unemployment rate, literacy level, urban population, and rural population. These indicators are first handled for missing values by replacing any NAs with the median of the respective column. Following this, the columns are converted to numeric types and scaled to standardize the data, ensuring that all variables contributed equally to the analysis.
+
+
+```{r}
+library(cluster)     # For silhouette analysis
+library(ggplot2)     # For plotting
+
+
+# Handle NA values - replace with median of the column
+na_columns <- c("GDP in dollars", "unemployment_rate", "literacy_level", "urban_population", "rural_population")
+external_indicators[na_columns] <- lapply(external_indicators[na_columns], function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x))
+
+# Convert columns to numeric
+numeric_columns <- na_columns
+external_indicators[numeric_columns] <- lapply(external_indicators[numeric_columns], as.numeric)
+
+# Scale the data
+external_indicators_scaled <- scale(external_indicators[numeric_columns])
+
+# Determine the range for possible number of clusters
+k_range <- 2:10
+
+# Calculate average silhouette score for each k
+sil_scores <- sapply(k_range, function(k) {
+  km <- kmeans(external_indicators_scaled, centers = k, nstart = 25)
+  silhouette_score <- mean(silhouette(km$cluster, dist(external_indicators_scaled))[, "sil_width"])
+  return(silhouette_score)
+})
+
+# Determine the optimal number of clusters using silhouette score
+optimal_clusters <- k_range[which.max(sil_scores)]
+cat("The optimal number of clusters is", optimal_clusters, "\n")
+
+# Plot silhouette scores for different number of clusters
+plot(k_range, sil_scores, type = "l", xlab = "Number of Clusters (k)", ylab = "Average Silhouette Score", main = "Silhouette Analysis For Optimal k")
+
+# Perform k-means clustering with the optimal number of clusters
+set.seed(42)
+kmeans_result <- kmeans(external_indicators_scaled, centers = optimal_clusters, nstart = 25)
+external_indicators$cluster <- as.factor(kmeans_result$cluster)
+
+# Find the cluster group of a specific country
+focus_country <- 'Hungary'  # Replace with actual focus country name
+focus_cluster <- external_indicators[external_indicators$Country == focus_country, "cluster"]
+
+# Check if Hungary is in a cluster
+if (is.na(focus_cluster)) {
+  print("Hungary is not assigned to any cluster.")
+} else {
+  print(paste("Hungary is in cluster:", as.character(focus_cluster)))
+  
+  # Find similar countries in the same cluster as Hungary
+  similar_countries <- external_indicators[external_indicators$cluster == focus_cluster & external_indicators$Country.Name != focus_country, "Country"]
+  
+  # Display similar countries
+  if (length(similar_countries) == 0) {
+    print("No similar countries found or Hungary is the only country in its cluster.")
+  } else {
+    print("Countries similar to Hungary:")
+    print(similar_countries)
+  }
+}
+
+```
+
+
+
+To determine the optimal number of clusters, we calculated the average silhouette scores for cluster sizes ranging from 2 to 10. The silhouette score measures how similar an object is to its own cluster compared to other clusters. The optimal number of clusters, as identified from your analysis, was four, where Hungary was found to belong to cluster number 2.
+
+However, when attempting to find countries similar to Hungary within the same cluster, no other countries were found in cluster 2, or it might be the case that Hungary was the only country assigned to this cluster. This result implies that Hungary's data profile is quite distinct from other countries in the dataset based on the selected indicators.
+
+
+
+
+
+
+
+**Hierarchical clusteringclustering to identify countries similar to a specific focus country, Hungary**
+
+Now,we will be  switching from k-means clustering to hierarchical clustering to find countries similar to Hungary based on the same set of external indicators. Hierarchical clustering is a method that builds a hierarchy of clusters where each node is a cluster consisting of the clusters of its daughter nodes.
+
+Hierarchical clustering is a suitable method for grouping countries based on a set of socio-economic and health indicators for several reasons, which is why I will be using this approach for the analysis.
+
+Firstly, hierarchical clustering does not require specifying the number of clusters in advance, which is beneficial when there isn't a clear understanding of how many clusters are expected or when it's desirable to explore the data for different levels of granularity. This flexibility allows us to examine the data at various levels of detail, from many small clusters to a few large ones, and decide post-hoc where to cut the dendrogram to obtain a meaningful number of clusters.
+
+Secondly, this method is particularly adept at revealing the structure within the data. By building a dendrogram, it provides a visual summary of the clustering process, illustrating the series of merges that led to the formation of the clusters. This is helpful when trying to understand not just which countries are similar, but also how countries group together hierarchically. This can yield insights into the relationships between different countries, potentially identifying sub-groups within larger clusters that share specific characteristics.
+
+Thirdly, in the context of country-level analysis, hierarchical clustering can capture the nested nature of the similarities between countries. Countries might be similar in one aspect (e.g., GDP per capita) but vary in another (e.g., government effectiveness), and hierarchical clustering can help untangle these complex relationships.
+
+Moreover, the algorithm’s flexibility with the linkage criterion allows for the accommodation of different types of relationships and cluster shapes. This is important because socio-economic data may not always conform to spherical clusters as assumed by K-means. For instance, using Ward's method within hierarchical clustering can help minimize the variance within clusters, which can be informative when dealing with economic and health indicators.
+
+Lastly, given the exploratory nature of this task, hierarchical clustering aligns well with the objective to derive insights without imposing too many assumptions on the data. This method will provide a comprehensive overview of how countries cluster based on the chosen indicators, which can subsequently guide more focused analyses.In summary, hierarchical clustering is a natural fit for understanding complex societal patterns and is particularly well-suited to the exploratory nature of this assignment. It can reveal not just which countries are similar to Hungary but also depict a broader picture of how countries group together based on multiple dimensions, providing a rich contextual understanding that can inform further analysis and decision-making.
+```{r}
+
+# Perform hierarchical clustering
+dist_matrix <- dist(external_indicators_scaled, method = "euclidean")
+hclust_result <- hclust(dist_matrix, method = "ward.D2")
+
+# Cut the dendrogram to get clusters
+clusters <- cutree(hclust_result, k = optimal_clusters)
+
+# Assign cluster labels to the data
+external_indicators$cluster <- as.factor(clusters)
+
+# Find the cluster group of a specific country
+focus_country <- 'Hungary'  # Replace with actual focus country name
+focus_cluster <- external_indicators[external_indicators$Country.Name == focus_country, "cluster"]
+
+# Check if Hungary is in a cluster
+if (is.na(focus_cluster)) {
+  print("Hungary is not assigned to any cluster.")
+} else {
+  print(paste("Hungary is in cluster:", as.character(focus_cluster)))
+  
+  # Find similar countries in the same cluster as Hungary
+  similar_countries <- external_indicators[external_indicators$cluster == focus_cluster & external_indicators$Country.Name != focus_country, "Country.Name"]
+  
+  # Display similar countries
+  if (length(similar_countries) == 0) {
+    print("No similar countries found or Hungary is the only country in its cluster.")
+  } else {
+    print("Countries similar to Hungary:")
+    print(similar_countries)
+  }
+}
+
+```
+Here's how the hierarchical clustering approach was executed:
+
+Distance Matrix Calculation:we calculated the Euclidean distance between each pair of observations (countries) in our scaled data set. This distance matrix represents the 'distance' or dissimilarity between every pair, forming the foundation for grouping similar entities.
+
+Cluster Formation Using Hierarchical Clustering: we applied hierarchical clustering using the Ward.D2 method, which minimizes the total within-cluster variance. This method tends to create more balanced clusters.
+
+Determining Clusters: The resulting dendrogram, which is a tree-like diagram showing the arrangement of the clusters formed at each step, was cut into the optimal number of clusters previously determined by the silhouette method (four clusters). This process assigns each country to one of these four clusters.
+
+Assigning Cluster Labels and Identifying Similar Countries: we then assigned cluster labels back to your original dataframe and identified which cluster Hungary was in. Hungary was found to be in cluster 3. Subsequently, we extracted other countries that were also assigned to this cluster to find countries similar to Hungary.
+
+Results: From this analysis, a significant number of countries, ranging from Argentina to the Virgin Islands (U.S.), were identified as being similar to Hungary based on the used indicators. This large group of similar countries suggests that Hungary shares common characteristics with a diverse set of nations across various continents, reflecting perhaps a similar economic scale, development level, or demographic distribution as indexed by the variables used.
+
+This hierarchical clustering method provided a broader perspective on Hungary's positioning in global comparisons, unlike the previous k-means clustering which found Hungary to be uniquely different.
+
+
+
+
+**Dendrogram of Hierarchical Clustering**
+
+
+```{r}
+# Plot dendrogram
+plot(hclust_result, hang = -1, main = "Dendrogram of Hierarchical Clustering")
+
+# Highlight the optimal number of clusters
+rect.hclust(hclust_result, k = optimal_clusters, border = "red")
+
+```
+
+The dendrogram visualizes the results of hierarchical clustering, a technique that groups data points based on similarity. Each leaf at the bottom represents a country, and the y-axis displays the level of dissimilarity (or distance) at which clusters are merged. In this dendrogram, the Ward.D2 method was employed, which aims to minimize the increase in within-cluster variance after merging clusters. The height at which two leaves join signifies how similar those countries are—the lower the height, the more similar. The red rectangles highlight the division into the optimal number of clusters, which is determined to be four for this dataset. This optimal cut is made to balance granularity with meaningful grouping, ensuring that countries within each cluster are sufficiently similar to each other. The dendrogram’s structure thus captures the hierarchy of relationships among the countries, with Hungary being placed into the third cluster. Upon examining this cluster, it contained a diverse array of countries, suggesting that according to the chosen indicators, these countries share similar characteristics with Hungary.
+
+
+Hierarchical clustering grouped Hungary into a large cluster with numerous countries, likely due to its ability to capture natural groupings in the data based on shared characteristics like economic, population, and education indicators. Unlike k-means, which partitions data into clusters by optimizing for homogeneity and silhouette score, hierarchical clustering creates clusters based on a hierarchy of similarities without assuming cluster shapes or sizes. This method can reveal more inclusive and potentially nuanced groupings. The broad cluster found in hierarchical clustering suggests a more gradual and shared similarity among countries, including Hungary, rather than the distinct separations that k-means clustering, guided by silhouette scores, might produce. This difference highlights the unique insights offered by each clustering approach and how they can interpret data relationships differently.
+
+
+**(b) How well do participant responses (attributes) predict pro-social attitudes (c19ProSo01,2,3 and 4) for this cluster of similar countries? Which attributes are the strongest predictors? How do these attributes compare to those of your focus country? Comment on the similarity and/or difference between your results for this question and Question 2(c). That is, does the group of all other countries 2(c), or the cluster of similar countries 3(b) give a better match to the important attributes for predicting pro-social attitudes in your focus country? Discuss.**
+
+
+Initially, a refined segment of the cvbase dataframe is generated, focusing exclusively on countries that are deemed analogous. The following code creates this segment:
+
+```{r}
+cvbase_similar <- cvbase %>% filter(coded_country %in% similar_countries)
+#View(cvbase_similar)
+```
+
+**Predict c19ProSo01:"I am willing to help others who suffer from coronavirus."(SIMILAR COUNTRIES)**
+```{r}
+model_c19ProSo01 <- lm(c19ProSo01 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data =cvbase_similar)
+# Get the summary of the model
+model_c19ProSo01_summary <- summary(model_c19ProSo01)
+
+model_c19ProSo01_summary
+
+
+```
+The output for the cluster of similar countries presents a linear model for predicting the pro-social attitude indicator c19ProSo01, revealing a Residual Standard Error (RSE) of 1.182 across 11,178 degrees of freedom, with 1,993 observations omitted due to missing values. The model exhibits a moderate explanatory power with a Multiple R-squared value of 0.3366 and an Adjusted R-squared of 0.3329, implying that approximately 33.66% of the variability in pro-social attitudes can be accounted for by the predictors. The F-statistic is highly significant, with a p-value well below the standard threshold of 0.05, suggesting that the model’s predictors collectively have a statistically significant effect on the outcome variable.
+
+Conversely, the model for Hungary, our focus country, indicates a lower RSE of 1.107 with 95 degrees of freedom, and 106 observations discarded due to missing data. Notably, the Multiple R-squared value of 0.6929 and the Adjusted R-squared of 0.4667 are substantially higher than those of the similar countries model, indicating that about 69.29% of the variation in the pro-social attitudes within Hungary is explained by the model. However, the Adjusted R-squared is significantly lower, which, along with a smaller F-statistic and a p-value of 2.409e-07, suggests that while the predictors are relevant, the smaller sample size may be inflating the predictive power.
+
+In comparison, the model derived from the similar countries cluster is less effective in explaining the variance in pro-social attitudes than the model for Hungary. The significant difference in the R-squared values between the two models suggests that the set of predictors used may have a stronger relationship with pro-social attitudes in the context of Hungary than when applied to a broader, more diverse set of similar countries. The more substantial Adjusted R-squared drop in the Hungary model highlights potential overfitting or the influence of a smaller, less diverse sample. Overall, the focus country's model demonstrates greater predictive strength, but this might not generalize as effectively across a more varied set of countries.
+
+**The best predictors of c19ProSo01:"I am willing to help others who suffer from coronavirus."(SIMILAR COUNTRIES)**
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo01_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo01_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo01_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo01_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo01_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+**Which attributes are the strongest predictors? How do these attributes compare to those of your focus country?**
+In the Hungarian model, the strongest predictor for pro-social attitude c19ProSo01 is **c19ProSo03**, which is consistent with other pro-social attitudes, followed by **employstatus_4**, indicating that not being employed but looking for work is a significant predictor of pro-social behavior. Age has a negative influence, suggesting younger individuals may have stronger pro-social attitudes in Hungary. Other notable predictors include feelings of boredom (**bor03**) and online isolation (**isoOthPpl_online.L** and **isoOthPpl_online^6**), which have varying impacts on pro-social attitudes.
+
+Comparing with the similar countries model, **c19ProSo03** also emerges as the strongest predictor, highlighting a global consistency in the influence of pro-social attitudes across different contexts. **c19ProSo02** and **c19ProSo04** are also significant across both models, underscoring the interconnectedness of these behaviors.
+
+There are, however, distinct differences in the two models. In the similar countries model, **employstatus_10** (volunteering) is a positive predictor, while in Hungary, the status of looking for work is more predictive. This suggests that in Hungary, those seeking employment might prioritize pro-social behavior differently than volunteers in the similar countries model. Additionally, while loneliness (**lone02** and **lone01**) and life satisfaction (**MLQ** and various **rankOrdLife** variables) are influential across both contexts, their specific effects vary, indicating that individual experiences of social well-being and life values may shape pro-social behaviors differently in Hungary compared to similar countries.
+
+These results illustrate that while some predictors of pro-social behavior are universally relevant, such as other pro-social attitudes, there are nuanced differences based on employment status and personal well-being that highlight the complex interplay of economic, social, and psychological factors in different cultural and national contexts.
+
+**Comment on the similarity and/or difference between your results for this question and Question 2(c). That is, does the group of all other countries 2(c), or the cluster of similar countries 3(b) give a better match to the important attributes for predicting pro-social attitudes in your focus country? Discuss.**
+In both models for other countries and for similar countries, there are strong commonalities in the top predictors for pro-social attitudes (c19ProSo01). For both, **c19ProSo03**, **c19ProSo02**, and **c19ProSo04** are crucial, underscoring the interlinked nature of pro-social behaviors; individuals likely to engage in one form of pro-social behavior are often inclined to engage in others. **MLQ**, a measure of life's purpose, consistently appears as well, suggesting that those with a clear sense of life's purpose are more prone to pro-social actions.
+
+The other countries model highlights the influence of personal behaviors related to COVID-19 (**c19perBeh01**) and gender (**genderMale**), indicating broader trends across diverse national contexts. In contrast, the similar countries model emphasizes the role of volunteering (**employstatus_10**) and different dimensions of life satisfaction and values (**rankOrdLife** variables), with **lone02** indicating a negative impact of feeling isolated on pro-social attitudes.
+
+Comparing these findings to the focus country, Hungary, we see that pro-social behaviors are significant across the board. However, the predictors in Hungary's model like employment status and age do not appear with the same prominence in the models for other countries or the cluster of similar countries. This suggests that while certain pro-social behaviors have a universal predictive quality, the context-specific factors influencing these behaviors in Hungary are not as predictive in a broader international context or even among similar countries. This may reflect cultural, economic, or policy differences that shape the nuances of pro-social attitudes in each setting.
+
+In determining whether the group of all other countries or the cluster of similar countries gives a better match to the important attributes for predicting pro-social attitudes in Hungary, it depends on the aspects being examined. For direct pro-social behaviors (like willingness to help vulnerable groups), there is a strong match across all contexts. However, for the socioeconomic factors like employment status, these predictors seem to be more context-specific and might not translate as well from the broader international model to the specific context of Hungary or to the similar countries. It implies that Hungary may have unique social dynamics at play, influencing pro-social attitudes in ways that are not as prominent in the models for other and similar countries.
+
+**Predictors of c19ProSo02:"I am willing to make donations to help others that suffer from coronavirus."(SIMILAR COUNTRIES)**
+
+```{r}
+model_c19ProSo02 <- lm(c19ProSo02 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data =cvbase_similar)
+# Get the summary of the model
+model_c19ProSo02_summary <- summary(model_c19ProSo02)
+
+model_c19ProSo02_summary
+
+```
+The comparative analysis of predictive models for the pro-social attitude indicator c19ProSo02 reveals interesting contrasts between the cluster of similar countries and Hungary. For the similar countries, the model has a Residual Standard Error (RSE) of 1.218 across 11,178 degrees of freedom, with 1,993 observations excluded due to missing data. The model demonstrates stronger predictive power with a Multiple R-squared of 0.4262 and an Adjusted R-squared of 0.4231, indicating that over 42% of the variance in pro-social attitudes is explained by the model's predictors. The F-statistic is substantial and the model is highly statistically significant, asserting the predictors' collective impact.
+
+In Hungary's case, the model's RSE is higher at 1.403 with fewer degrees of freedom (95), and 106 observations are missing. Despite the smaller dataset, Hungary's Multiple R-squared is 0.6312, showing that the predictors explain approximately 63% of the variance in pro-social attitudes. However, the Adjusted R-squared drops significantly to 0.3595, which might suggest overfitting given the smaller sample size. The F-statistic, while lower than that of the similar countries model, is still statistically significant.
+
+Overall, while Hungary's model displays a higher R-squared value, suggesting a stronger fit between the predictors and pro-social attitudes, the Adjusted R-squared shows that when the number of predictors and sample size are accounted for, the model's explanatory power diminishes significantly compared to the broader model. This implies that although the predictors seem to fit Hungary's data well, they may not be as effective when applied to a more diverse dataset. The larger sample of similar countries provides a more stable model with less variability, but with a less dramatic explanation of variance compared to the focus country's model.
+
+**The best predictors of c19ProSo02:"I am willing to make donations to help others that suffer from coronavirus."(SIMILAR COUNTRIES)**
+
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo02_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo02_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo02_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo02_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo02_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+**Which attributes are the strongest predictors? How do these attributes compare to those of your focus country?**
+For the Hungarian model predicting c19ProSo02, online interaction with friends (**isoFriends_online.L**) appears as the strongest predictor, suggesting that virtual social engagement is significantly associated with pro-social behavior. Interestingly, various **rankOrdLife** variables, representing different life values, also feature prominently, some negatively correlated with pro-social behavior (**rankOrdLife_3B**, **rankOrdLife_3E**, **rankOrdLife_3D**), indicating that how individuals rank certain aspects of life may influence their inclination to engage in pro-social behaviors. Education (**edu**) and employment status (**employstatus_3**) are also predictive, while other pro-social attitudes like **c19ProSo01**, **c19ProSo03**, and **c19ProSo04** are in line with expectations that these attitudes interrelate.
+
+Comparatively, the model for similar countries places a strong emphasis on the interconnectedness of pro-social behaviors, with **c19ProSo03** and **c19ProSo01** being the most significant predictors. This suggests a consistent pattern where pro-social attitudes in one domain predict pro-social attitudes in another. Radical actions in response to COVID-19 (**c19RCA01** and **c19RCA03**) and boredom (**bor01**) are significant predictors, which might reflect a broader social response to the pandemic and its impact on pro-social attitudes.
+
+Looking at the similarities between the two models, the reciprocal influence of pro-social behaviors is apparent. For both Hungary and similar countries, an individual's broader pro-social profile tends to predict their willingness to make donations to help those suffering from COVID-19. However, the differences lie in the importance of life satisfaction values and specific behaviors related to COVID-19, which seem to play a more considerable role in the similar countries model than in Hungary.
+
+For Hungary, the role of online social interactions stands out, indicating a possibly unique aspect of how social engagement patterns within the country are influencing pro-social behaviors during the pandemic. In contrast, the similar countries model suggests a more pronounced impact of actions and beliefs related to COVID-19 itself.
+
+The main takeaway is that while there is a core set of behaviors that drive pro-social attitudes in both Hungary and similar countries, the specific context and cultural factors lead to a diverse array of other significant predictors, reflecting the multifaceted nature of pro-social attitudes.
+
+**Comment on the similarity and/or difference between your results for this question and Question 2(c). That is, does the group of all other countries 2(c), or the cluster of similar countries 3(b) give a better match to the important attributes for predicting pro-social attitudes in your focus country? Discuss.**
+
+Both the model for other countries and the model for countries similar to Hungary identify **c19ProSo03** (willingness to protect vulnerable groups) and **c19ProSo01** (willingness to help those suffering from COVID-19) as the strongest predictors of **c19ProSo02** (willingness to make donations for COVID-19). This reinforces the idea that pro-social behaviors are interconnected—individuals engaged in one type of pro-social action are likely to participate in others.
+
+Additional predictors in both models include actions taken in response to the pandemic, with **c19RCA01** (support for mandatory vaccination) and **c19RCA03** (reporting people suspected to have coronavirus) featuring strongly. This suggests that pro-active stances in managing the pandemic correlate with broader pro-social tendencies.
+
+Differences arise in the emphasis on certain predictors. For other countries, the negative coefficient for **employstatus_4** (not employed, looking for work) contrasts with the positive association of **employstatus_10** (volunteering) in the similar countries model, indicating that employment status influences pro-social attitudes differently in these contexts. Additionally, **MLQ** (life having a clear sense of purpose) and **bor01** (feeling bored) are predictive in both, but the significance of education (**edu**) and life satisfaction (**lifeSat**) appears more in the broader model, while **age** and specific life ranking (**rankOrdLife_2F**) are more predictive in similar countries.
+
+When comparing these results with the predictors for Hungary, it seems that social and personal well-being indicators (like online socialization and life satisfaction) play a more pronounced role within Hungary. In contrast, for both other countries and similar countries, beliefs and behaviors related to COVID-19 management are more prominent.
+
+This suggests that for Hungary, the important attributes for predicting pro-social attitudes may be more centered around individual life circumstances and subjective well-being, whereas in other countries and those similar to Hungary, a broader social response to the pandemic and related actions are more indicative of pro-social attitudes.
+
+Therefore, the match to important attributes for predicting pro-social attitudes in Hungary is nuanced. If one is considering the broader social responses to the pandemic, the other countries model may offer more insight, given its emphasis on COVID-19-related behaviors. However, if focusing on personal well-being and individual circumstances, the similar countries model—and by extension, the Hungarian model—could provide a better match due to their common predictors in these domains. This indicates that while there's an overarching theme in pro-social behavior prediction, regional and cultural contexts fine-tune the influences of specific predictors.
+
+**Predict c19ProSo03:"I am willing to protect vulnerable groups from coronavirus even at my own expense.."(SIMILAR COUNTRIES)**
+
+```{r}
+model_c19ProSo03 <- lm(c19ProSo03 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data =cvbase_similar)
+# Get the summary of the model
+model_c19ProSo03_summary <- summary(model_c19ProSo03)
+
+model_c19ProSo03_summary
+
+```
+The predictive modeling outputs for the pro-social attitude indicator c19ProSo03 show a reversal of trends when comparing the cluster of similar countries with Hungary. For the similar countries, the model reports a Residual Standard Error (RSE) of 1.166 with a small sample size of 95 degrees of freedom, excluding 106 observations due to missing data. The Multiple R-squared value is relatively high at 0.7032, suggesting that the model explains about 70.32% of the variance in pro-social attitudes for this group. However, the Adjusted R-squared value is considerably lower at 0.4845, indicating that the model may be overfitting the data given the number of predictors and the small sample size. The F-statistic shows statistical significance, affirming the importance of the model's predictors.
+
+Contrastingly, for Hungary, the model has a higher RSE of 1.205 but benefits from a much larger sample size with 11,178 degrees of freedom, despite having 1,993 observations omitted. The Multiple R-squared of 0.4491, while lower than that of the similar countries, still accounts for a notable portion of the variance in pro-social attitudes, with an Adjusted R-squared of 0.4461 that is very close to the Multiple R-squared, suggesting a robust model that's not overfit. The F-statistic is again significant, supporting the predictive relevance of the model's factors.
+
+In summary, while the model for the similar countries appears to fit their data well, the higher R-squared value might be misleading due to potential overfitting as shown by the substantial drop to the Adjusted R-squared. In contrast, Hungary's model, despite explaining less variance, seems to be more reliable due to its stability between the Multiple and Adjusted R-squared values, which indicates a better generalizability across a larger sample without overfitting. This comparison suggests that the factors influencing pro-social attitudes may manifest differently in a smaller, more homogenous group compared to a larger, more heterogeneous one like Hungary's.
+
+**The best predictors of c19ProSo03:"I am willing to protect vulnerable groups from coronavirus even at my own expense.."(SIMILAR COUNTRIES)**
+
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo03_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo03_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo03_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo03_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo03_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+```
+**Which attributes are the strongest predictors? How do these attributes compare to those of your focus country?**
+
+For the Hungarian model predicting c19ProSo03 (willingness to protect vulnerable groups from COVID-19), the strongest negative predictor is online interaction with other people (**isoOthPpl_online.L**), which may indicate that those who engage less in online socialization are more inclined to protect others. The positive predictors include other pro-social attitudes like **c19ProSo01** and **c19ProSo04**, demonstrating again the interconnectedness of pro-social behaviors. The presence of **MLQ** (My Life has a clear sense of purpose) suggests that individuals with a strong sense of life purpose are likely to engage in protective behaviors toward others. Radical actions in response to COVID-19 (**c19RCA02** and **c19RCA03**) also appear as significant, indicating that attitudes towards the pandemic measures relate to other forms of pro-social behavior.
+
+In the similar countries model, **c19ProSo02** and **c19ProSo04** are the strongest predictors, followed closely by **c19ProSo01**, confirming the trend seen in the Hungarian model that pro-social behaviors are likely to occur together. Life satisfaction (**lifeSat**) emerges as a significant positive predictor, as does the negative effect of certain conspiracy beliefs (**consp02**) and the influence of gender (**genderMale**). Notably, life satisfaction is predictive in the similar countries model but not in the top predictors for Hungary, pointing to a possible difference in the role of general well-being in predicting pro-social behavior.
+
+Across both models, the most substantial predictors are related to other forms of pro-social behaviors, underscoring the idea that individuals inclined toward one type of pro-social action are generally inclined toward others. However, while the Hungarian model includes predictors that reflect online socialization and radical actions related to COVID-19, the similar countries model places more emphasis on life satisfaction, conspiracy beliefs, and gender.
+
+These differences suggest that while pro-social behaviors are broadly correlated across different contexts, the specific drivers of these behaviors can vary. In Hungary, online socialization habits and direct responses to the pandemic are more strongly associated with the desire to protect vulnerable groups. In contrast, for similar countries, the predictors are more diverse, including general well-being and broader societal beliefs, which may influence the propensity for pro-social behavior. This highlights how cultural, societal, and individual factors shape the expression and prediction of pro-social attitudes in different contexts.
+
+
+
+**Comment on the similarity and/or difference between your results for this question and Question 2(c). That is, does the group of all other countries 2(c), or the cluster of similar countries 3(b) give a better match to the important attributes for predicting pro-social attitudes in your focus country? Discuss.**
+In analyzing the predictors for pro-social attitudes towards protecting vulnerable groups (c19ProSo03) across different models, it becomes evident that the group of all other countries provides a better alignment with the specific factors influencing Hungary compared to the cluster of similar countries. Both models underscore the interconnectedness of various pro-social behaviors, consistent with Hungary's predictors. However, the model for all other countries notably includes predictors related to online social interactions and pandemic-related radical actions, which are also prominent in Hungary's model. These include negative effects from certain types of online socialization and positive influences from engaging in pandemic management behaviors. In contrast, the similar countries model focuses more on general well-being and broader societal factors such as life satisfaction, conspiracy beliefs, and loneliness, which are less emphasized in Hungary's model. Thus, the model of all other countries, with its nuanced view on how specific social behaviors and attitudes towards the pandemic shape pro-social attitudes, is more reflective of the dynamics observed within Hungary. This alignment suggests a closer match in understanding how individual and contextual factors combine to influence pro-social behaviors in Hungary.
+
+
+**Predict c19ProSo04:"I am willing to make personal sacrifices to prevent the spread of coronavirus."(SIMILAR COUNTRIES)**
+```{r}
+model_c19ProSo04 <- lm(c19ProSo04 ~employstatus_1 + employstatus_2 + employstatus_3+ employstatus_4 + employstatus_5 + employstatus_6 + employstatus_7 + employstatus_8 + employstatus_9 + employstatus_10  + isoFriends_online +lone01 +lone02 +lone03 +  happy + lifeSat + MLQ + bor01 + bor02+ bor03+ consp01+ consp02+ consp03 +  rankOrdLife_1+ rankOrdLife_2+ rankOrdLife_3+rankOrdLife_4     +  rankOrdLife_5    +   rankOrdLife_6+c19perBeh01+ c19perBeh02+ c19perBeh03+ c19RCA01+ c19RCA02+ c19RCA03 + gender + age + edu+ c19ProSo01+ c19ProSo02 +c19ProSo03+ c19ProSo04, data =cvbase_similar)
+# Get the summary of the model
+model_c19ProSo04_summary <- summary(model_c19ProSo04)
+
+model_c19ProSo04_summary
+
+```
+The outputs for the prediction of pro-social attitude indicator c19ProSo04 exhibit notable differences between the similar countries cluster and Hungary. The model for the similar countries cluster has a Residual Standard Error of 1.294 over a large sample of 11,178 degrees of freedom, indicating variability around the predicted values. Despite a significant number of observations being omitted due to missing data, the Multiple R-squared of 0.2874 denotes that close to 29% of the variance in pro-social attitudes is explained by the model, with an Adjusted R-squared of 0.2835 slightly lower, suggesting a good fit that accounts for the number of predictors used. The model is statistically significant, as evidenced by the very low p-value.
+
+On the other hand, the model focusing on Hungary shows a slightly higher Residual Standard Error of 1.346, pointing to a greater dispersion of residuals, with 95 degrees of freedom and a similar number of missing observations as the similar countries. This model achieves a Multiple R-squared of 0.5482, indicating that over 54% of the variance in pro-social attitudes is explained by the model's predictors within Hungary. However, there is a substantial drop in the Adjusted R-squared to 0.2153, which may signal overfitting due to the model accounting for more predictors than justified by the sample size. The F-statistic, while still indicating significance, is notably lower than that of the similar countries cluster model.
+
+In comparing these two models, the greater consistency between the Multiple and Adjusted R-squared in the similar countries cluster suggests a more reliable model, whereas the model for Hungary, despite its higher Multiple R-squared, is potentially less stable and more affected by the specificities of the smaller sample size. The lower Adjusted R-squared for Hungary points to a model that, while it may capture certain patterns in the data, might not generalize as well due to overfitting.
+
+**The best predictors of c19ProSo04:"I am willing to make personal sacrifices to prevent the spread of coronavirus."(SIMILAR COUNTRIES)**
+```{r}
+# Create a tibble (tidy dataframe) with variable names, estimates, standard errors, t-values, and p-values
+predictor_importance <- tibble(
+  variable = names(model_c19ProSo04_summary$coefficients[, "Estimate"]),
+  estimate = model_c19ProSo04_summary$coefficients[, "Estimate"],
+  std_error = model_c19ProSo04_summary$coefficients[, "Std. Error"],
+  t_value = model_c19ProSo04_summary$coefficients[, "t value"],
+  p_value = model_c19ProSo04_summary$coefficients[, "Pr(>|t|)"]
+) %>% 
+  # Remove the intercept
+  filter(variable != "(Intercept)") %>%
+  # Arrange by the absolute t-values in descending order to get the most significant predictors
+  arrange(desc(abs(t_value)))
+
+# Display the top 10 predictors
+top_10_predictors <- head(predictor_importance, 10)
+
+# Show the top 10 predictors
+print(top_10_predictors)
+
+```
+**Which attributes are the strongest predictors? How do these attributes compare to those of your focus country?**
+The analysis of the top predictors for the willingness to make donations for COVID-19 (c19ProSo04) in Hungary and similar countries reveals both shared and unique factors influencing pro-social behaviors. In both contexts, the willingness to protect vulnerable groups (c19ProSo03) is a robust predictor, underscoring a universal linkage between protective behaviors and donating. This suggests that pro-social attitudes are interconnected and that actions to protect others translate into financial support during crises.
+
+The Hungarian model highlights a distinct emphasis on personal values and life priorities, with multiple rankOrdLife variables showing both positive and negative impacts. This indicates that in Hungary, individual life values significantly sway one's propensity to donate, reflecting perhaps a more introspective or principle-driven approach to pro-social actions. Conversely, the model for similar countries presents a broader spectrum of influences, including direct responses to the pandemic like behavioral adjustments (c19perBeh02, c19perBeh03) and attitudes towards radical actions (c19RCA02), as well as demographic factors such as age and conspiracy beliefs (consp01). These predictors suggest that a wider range of societal norms and individual responses to global crises shape donating behaviors in these countries.
+
+The key difference between the models lies in the additional emphasis on internal values within Hungary versus a more varied set of external influences and behaviors in similar countries. This divergence likely reflects the distinct cultural, social, and economic contexts influencing pro-social behaviors, with Hungary possibly prioritizing deeply-held personal values more than the broader set of similar countries, which are influenced by a diverse array of practical and situational factors. This analysis highlights the importance of context in understanding what motivates individuals towards pro-social behaviors, as local and cultural nuances play significant roles in shaping these actions.
+
+**Comment on the similarity and/or difference between your results for this question and Question 2(c). That is, does the group of all other countries 2(c), or the cluster of similar countries 3(b) give a better match to the important attributes for predicting pro-social attitudes in your focus country? Discuss.**
+
+In examining the top predictors for the pro-social attitude of willingness to make donations for COVID-19 (c19ProSo04) across different models, both the other countries and similar countries models highlight the significance of interconnected pro-social behaviors, particularly the willingness to protect and help others during the pandemic, as exemplified by c19ProSo03 and c19ProSo01. Both models also emphasize the influence of specific behavioral responses to the pandemic, such as attitudes towards radical actions and individual pandemic-related behaviors, which align with predictors found in Hungary’s model. 
+
+The model for other countries, with its inclusion of a diverse range of demographic factors and personal values, might offer a nuanced perspective that aligns well with Hungary if similar factors are influential there. This model integrates complex relationships between attitudes towards pandemic management, personal values, and demographic characteristics in shaping willingness to donate. Alternatively, the similar countries model, which also captures the essence of pandemic-related behaviors but includes additional factors like conspiracy beliefs and online social interactions, could resonate more closely with Hungary if such societal and behavioral nuances are more reflective of the Hungarian context.
+
+Choosing between these models for a better alignment with Hungary depends critically on the specific factors that drive pro-social attitudes within the country. If Hungary’s pro-social behaviors are shaped by a broad spectrum of demographic influences and diverse personal values similar to the trends observed in other countries, then that model would be particularly relevant. However, if Hungary’s attitudes are more directly influenced by immediate responses to the pandemic and the associated social dynamics, the similar countries model might provide a more accurate reflection of the underlying drivers of pro-social behaviors in Hungary.
+
+*Summary*:
+In our comparative analysis of predictors for pro-social attitudes across models for Hungary, other countries, and similar countries, we find overarching themes and unique nuances. All models reveal that pro-social behaviors such as protecting vulnerable groups, helping those suffering from COVID-19, and making donations are strongly interconnected. This suggests a broad spectrum of empathy and proactive behavior during the pandemic, highlighting a universal inclination towards kindness in crisis situations. However, the influence of specific pandemic-related actions and personal behaviors shows how direct experiences and perceptions of the pandemic shape willingness to engage in these activities. The distinct variations across models underscore the role of cultural and societal contexts in influencing these behaviors. For instance, while the Hungarian model often emphasizes the impact of online social interactions and personal values, the model for other countries integrates a more diverse range of demographic influences, and the similar countries model focuses more on broader societal behaviors and beliefs like conspiracy theories. Choosing the most aligned model for Hungary depends on whether demographic diversity and personal values or direct pandemic responses and social dynamics more significantly drive pro-social behaviors. This nuanced understanding is vital for effectively predicting and fostering pro-social behaviors within any cultural or societal context.
+
+
+**Dataframe with indicators from external sources used for clustering**
+```{r}
+external_indicators
+```
+
+
+
